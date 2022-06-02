@@ -1,0 +1,21 @@
+#ignore pdfs
+*.pdf
+#ignore doxc
+*.docx
+*.xlsx
+#ignore pngs
+*.png
+#ignore unwaned/old files
+*.ipynb
+#ignore dataset_folder & results
+/dataset_folder
+/results
+
+Firefly.*
+old_firefly*
+prime_colab*
+prime_discrete*
+click*
+datasett*
+egg_CNN_dataset*
+newest_egg_CNN_dataset*
