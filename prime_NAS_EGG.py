@@ -1421,7 +1421,7 @@ def train_eval_offline(
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
     print('==========================================')
     if save_dir is not None:
-      print('========== Saving weights===============')
+      print('===========Saving weights================')
       model.save_weights(f'./results/{save_dir}_{step}', overwrite=True)
 
   if enable_discrete_optimizer:
