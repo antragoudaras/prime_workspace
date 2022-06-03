@@ -35,9 +35,6 @@ In this colab, we implement the PRIME model, and show how it can be trained on d
 Running this notebook in google colab does not require installation of any dependencies since tensorflow and tensorflow_probability are installed by default, but you might need to install them if you run this notebook locally. The latest versions should work.
 """
 
-from distutils.log import error
-from random import random
-from turtle import distance
 from absl import app
 from absl import flags
 from absl import logging

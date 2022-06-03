@@ -16,7 +16,7 @@ import csv
 from typing import Optional, Dict, List
 from copy import deepcopy
 
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print("Num GPUs Available: {}".format(len(tf.config.list_physical_devices('GPU'))), flush=True)
 gfile = tf.io.gfile.GFile
 
 
