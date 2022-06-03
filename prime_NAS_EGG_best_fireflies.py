@@ -41,7 +41,6 @@ from turtle import distance
 from absl import app
 from absl import flags
 from absl import logging
-from torch import negative
 
 # These tensorflow installs are automatically provided by the
 # Google colab runtime. If you want to run this code locally,
