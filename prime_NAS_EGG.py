@@ -1421,7 +1421,7 @@ def train_eval_offline(
     print('==========================================')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'./results/{save_dir}_{step}', overwrite=True)
+      model.save_weights(f'./prime_results/{save_dir}_{step}', overwrite=True)
 
   if enable_discrete_optimizer:
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm)')
