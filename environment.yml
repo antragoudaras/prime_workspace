@@ -43,7 +43,7 @@ dependencies:
   - scipy
   - shap
   - tensorboard
-  - tensorflow
+  - tensorflow=2.8.0
   - umap-learn
   - wandb
   - xarray
