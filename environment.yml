@@ -1,5 +1,3 @@
-
-  
 name: null
 
 channels:
@@ -7,45 +5,9 @@ channels:
   - defaults
 
 dependencies:
-  - bokeh
-  - cupy
-  - dask
-  - dask-ml
-  - dask-labextension
-  - datashader
-  - featuretools
-  - gh
-  - git
-  - h5py
-  - holoviews
-  - hvplot
-  - imbalanced-learn
-  - jupyterlab
-  - jupyterlab-git
-  - jupyterlab-lsp
-  - jupyterlab-nvdashboard
-  - lightgbm
-  - matplotlib
-  - nccl
-  - numba
+  - python=3.7
   - numpy
-  - optuna
   - pandas
-  - panel
   - pip
   - pip:
     - -r requirements.txt
-  - pyarrow
-  - python
-  - python-language-server
-  - pyviz_comms
-  - scikit-learn
-  - scipy
-  - shap
-  - tensorboard
-  - tensorflow=2.8.0
-  - umap-learn
-  - wandb
-  - xarray
-  - xeus-python
-  - xgboost
