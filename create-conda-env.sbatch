@@ -6,8 +6,8 @@
 #SBATCH --constraint=intel
 #SBATCH --job-name=create-conda-env
 #SBATCH --mail-type=ALL
-#SBATCH --output=bin/%x-%j-slurm.out
-#SBATCH --error=bin/%x-%j-slurm.err
+#SBATCH --output=./%x-%j-slurm.out
+#SBATCH --error=./%x-%j-slurm.err
 
 # create the conda environment
 ./create-conda-env.sh
