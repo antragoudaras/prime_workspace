@@ -16,6 +16,7 @@ import csv
 from typing import Optional, Dict, List
 from copy import deepcopy
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
 gfile = tf.io.gfile.GFile
 
