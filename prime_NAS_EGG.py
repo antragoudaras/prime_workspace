@@ -1363,13 +1363,14 @@ def train_eval_offline(
         print ('-------------------------------------------------------')
 
     print ('============Finished Training============')
+    if save_dir is not None:
+      print('===========Saving weights================')
+      model.save_weights(f'./prime_results/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
     print('==========================================')
-    if save_dir is not None:
-      print('===========Saving weights================')
-      model.save_weights(f'./prime_results/{save_dir}_{step}', overwrite=True)
+    
 
   if enable_discrete_optimizer:
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm)')
