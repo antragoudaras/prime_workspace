@@ -10,6 +10,7 @@
 #ignore dataset_folder & results
 /dataset_folder
 /results
+/dataset_high_freq
 
 Firefly.*
 old_firefly*

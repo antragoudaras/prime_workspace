@@ -457,11 +457,11 @@ class PRIMETransformerModel(tf.keras.Model):
     x = TransformerLayer(d_model=64, num_heads=8, dff=256)(x)
     x = TransformerLayer(d_model=64, num_heads=8, dff=256)(x)
     
-    x = tf.keras.layers.Reshape(target_shape=(384,))(x)
+    x = tf.keras.layers.Reshape(target_shape=(512,))(x)
     
     if self.contextual:
       context_input = tf.keras.Input(self.num_contexts)
-      out_context = tf.keras.layers.Dense(384, use_bias=False)(context_input)
+      out_context = tf.keras.layers.Dense(512, use_bias=False)(context_input)
 
       # Pointwise multiply the contexts to make sure that the context
       # conditioning is done properly. From https://arxiv.org/abs/1912.13465.
@@ -535,7 +535,7 @@ class PRIMETransformerModel(tf.keras.Model):
     else:
       # TODO(aviralkumar): Fix the hardcoded 77 input dimensionality in code
       if not isinstance(inputs, list) and not isinstance(inputs, tuple):
-        inputs = (inputs[:, 72], inputs[:, 72:])
+        inputs = (inputs[:, 163], inputs[:, 163:])
 
       transformer_embedding = self._base_network(inputs, training=training)
       
@@ -848,7 +848,7 @@ class PRIMEDataset(tf.Module):
     self._eval_metric_keys = ['accuracy']
 
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
-                                  'param_4', 'param_5', 'param_6']
+                                  'param_4', 'param_5', 'param_6', 'param_7', 'param_8']
 
     self._tf_dataset = {}
     self._top = 0
@@ -1027,19 +1027,23 @@ class PRIMEDataset(tf.Module):
 
 #@title Firefly Discrete Optimizer used after supervised training
 class FireflyAlg():
-  def __init__(self, initial_dataset:dict, config:dict, population=23, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True):
+  def __init__(self, initial_dataset:dict, config:dict, population=23, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True, random_fireflies=True):
     self._config = config
     self.initial_dataset = initial_dataset
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
-                                  'param_4', 'param_5', 'param_6']
+                                  'param_4', 'param_5', 'param_6', 'param_7', 'param_8']
     self.population = population
     self.alpha = alpha
     self.betamin = betamin
     self.gamma = gamma
     self.remainder = remainder
+    self.random_fireflies = random_fireflies
 
     self._setup_datset()
-    self.fireflies = self.generate_fireflies(self.population)
+    if self.random_fireflies:
+      self.fireflies = self.generate_fireflies(self.population)
+    else:
+      self.fireflies = self.get_best_fireflies()
   def _setup_datset(self,):
     """Construct a proper datset for the FireflyAlg object, needed for the conversion function below."""
     self._design_space_dict = {}
@@ -1216,8 +1220,7 @@ def train_eval_offline(
     # Data flags
     config=None,
     training_dataset=None,
-    validation_dataset=None,
-    firefly_dataset=None,    
+    validation_dataset=None,   
     # Train flags
     train_steps=int(1e6),
     summary_freq=1000,
@@ -1365,7 +1368,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'./prime_results/{save_dir}_{step}', overwrite=True)
+      model.save_weights(f'./saved_weights_dir/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
@@ -1373,10 +1376,10 @@ def train_eval_offline(
     
 
   if enable_discrete_optimizer:
-    print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm)')
+    print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
-    discrete_optimizer = FireflyAlg(firefly_dataset, config, population=25, remainder=True)
-    best_firefly = discrete_optimizer.run_inference(num_iters=1000, model=model, mode_opt=False)
+    discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
+    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
     best_score = model(inputs=best_firefly, training=False)
@@ -1386,52 +1389,92 @@ def train_eval_offline(
     print('---Predicted scores/error for these accelerator designs-----')
     scores = model(inputs=discrete_optimizer.fireflies, training=False)
     print('{}'.format(scores))
+
+    print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
+    discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
+    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
+    print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
+    best_score2 = model(inputs=best_firefly2, training=False)
+    print('Score/Error: {}'.format(best_score2))
+    print('----Full list of optimized designs-----')
+    print('{}'.format(discrete_optimizer2.onh_2_integer_conv(discrete_optimizer2.fireflies.numpy())))
+    print('---Predicted scores/error for these accelerator designs-----')
+    scores2 = model(inputs=discrete_optimizer2.fireflies, training=False)
+    print('{}'.format(scores2))
+
+    print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
+    discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
+    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
+    print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
+    best_score3 = model(inputs=best_firefly3, training=False)
+    print('Score/Error: {}'.format(best_score3))
+    print('----Full list of optimized designs-----')
+    print('{}'.format(discrete_optimizer3.onh_2_integer_conv(discrete_optimizer3.fireflies.numpy())))
+    print('---Predicted scores/error for these accelerator designs-----')
+    scores3 = model(inputs=discrete_optimizer3.fireflies, training=False)
+    print('{}'.format(scores3))
     
 
-config_str = """discrete:param_1:float64:true:35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50
-discrete:param_2:float64:true:20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
-discrete:param_3:float64:true:35,36,37,38,39,40,41,42,43,44,45
-discrete:param_4:float64:true:70,71,72,73,74,75,76,77,78,79,80
-discrete:param_5:float64:true:10,11,12,13,14,15,16,17,18,19,20
-discrete:param_6:float64:true:2,3,4,5,6,7,8"""
+config_str = """discrete:param_1:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54
+discrete:param_2:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
+discrete:param_3:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53
+discrete:param_4:float64:true:50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82
+discrete:param_5:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29
+discrete:param_6:float64:true:2,3,4,5,6,7,8
+discrete:param_7:float64:true:1,2,3,4,5,6,7,8,9
+discrete:param_8:float64:true:0,1,2,3,4,5,6,7,9"""
 
 
-df = pd.read_csv(r'./new_100rows_created_by_ibex.csv',
+df = pd.read_csv(r'./final_dataset_high_freq.csv',
             index_col=0,
-            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "accuracy"])
+            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "param_7", "param_8", "accuracy"])
 
 # Drop first row by selecting all rows from first row onwards
 df = df.iloc[1: , :]
-# print(df)
 df_actual = df.drop_duplicates()
 df_sorted = df_actual.sort_values(by=["accuracy"])
+print(df_sorted)
 
-df_train = df_sorted.iloc[: 80, :]
-df_valid = df_sorted.iloc[81: , :]
+train_len = int(0.8 * (len(df_sorted) - 1))
+df_train = df_sorted.iloc[: train_len, :]
+df_valid = df_sorted.iloc[train_len + 1 : , :]
 
 training_data = df_train.to_dict('list')
+validation_data = df_valid.to_dict('list')
+
 for key in training_data:
     training_data[key] = np.array(training_data[key], dtype=np.float32)
+training_data['param_6'] = np.array(int(1e1)*training_data['param_6'], dtype=np.float32)
+training_data['param_7'] = np.array(int(1e2)*training_data['param_7'], dtype=np.int32)
+training_data['param_7'] = np.array(training_data['param_7'], dtype=np.float32)
+training_data['param_8'] = np.array(int(1e4)*training_data['param_8'], dtype=np.int32)
+training_data['param_8'] = np.array(training_data['param_8'], dtype=np.float32) 
 
-training_data['param_6'] = np.array(10*training_data['param_6'], dtype=np.float32)
-
-validation_data = df_valid.to_dict('list')
 for key in validation_data:
     validation_data[key] = np.array(validation_data[key], dtype=np.float32)
+validation_data['param_6'] = np.array(int(1e1)*validation_data['param_6'], dtype=np.float32)
+validation_data['param_7'] = np.array(int(1e2)*validation_data['param_7'], dtype=np.int32)
+validation_data['param_7'] = np.array(validation_data['param_7'], dtype=np.float32)
+validation_data['param_8'] = np.array(int(1e4)*validation_data['param_8'], dtype=np.int32)
+validation_data['param_8'] = np.array(validation_data['param_8'], dtype=np.float32) 
 
-validation_data['param_6'] = np.array(10*validation_data['param_6'], dtype=np.float32)
+unique_list = []
+for key in training_data:
+    if key != 'accuracy':
+        unique_list.append(np.unique(training_data[f'{key}']))
+print(unique_list)
 
-
-print ('Keys in the dummy dataset: ', training_data.keys())
+print ('Keys in the dataset: ', training_data.keys())
 
  
 train_eval_offline(
   config=config_str,
   training_dataset=training_data,
   validation_dataset=validation_data,
-  firefly_dataset=None,
-  train_steps=50001,
-  summary_freq=500,
+  train_steps=55001,
+  summary_freq=250,
   eval_freq=1000,
   add_summary=True,
   save_dir='./tragos_results_discrete',
@@ -1439,7 +1482,7 @@ train_eval_offline(
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=10,
+  batch_size=100,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
