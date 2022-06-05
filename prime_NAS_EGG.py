@@ -1345,9 +1345,9 @@ def train_eval_offline(
 
         if save_dir is not None:
           if step == 0:
-            model.save(save_dir)
+            model.save(save_dir, overwrite=True)
           if step % 5000 == 0:
-            model.save_weights(os.path.join(save_dir, "ckpt-"+str(step)))
+            model.save_weights(os.path.join(save_dir, "ckpt-"+str(step)), overwrite=True)
     
       if step % eval_freq == 0:
         val_batch = val_problem.get_training_batch()
