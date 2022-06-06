@@ -17,4 +17,4 @@ module load cudnn/8.1.1-cuda11.2.2
 # Load software stack
 conda activate ./env
 
-python prime_NAS_EGG.py
+python prime_NAS_EGG_low_freq.py
