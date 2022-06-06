@@ -807,6 +807,7 @@ class HardwareOptProblem:
 
     # Choose what kind of batch to provide while training the model
     self.get_training_batch = self.get_all_batch
+    self.get_valid_batch = self.get_full_valid_batch
 
   def get_all_batch(self,):
     """Sample i.i.d. from the entire dataset."""
@@ -818,6 +819,15 @@ class HardwareOptProblem:
     batch_dict['objective'] = batch_y
     return batch_dict
 
+  def get_full_valid_batch(self,):
+    """Sample i.i.d. from the entire dataset."""
+    indices = np.random.randint(1, 
+                                self.dataset._top, self.dataset.size)
+    batch_x, batch_y = self.dataset._get_batch(indices)
+    batch_dict = dict()
+    batch_dict['design'] = batch_x
+    batch_dict['objective'] = batch_y
+    return batch_dict
 
   def get_top_batch(self,):
     """Get only the top scoring batch for eval"""
@@ -1346,11 +1356,11 @@ def train_eval_offline(
         if save_dir is not None:
           if step == 0:
             model.save(save_dir, overwrite=True)
-          if step % 5000 == 0:
+          if step % 10000 == 0:
             model.save_weights(os.path.join(save_dir, "ckpt-"+str(step)), overwrite=True)
     
       if step % eval_freq == 0:
-        val_batch = val_problem.get_training_batch()
+        val_batch = val_problem.get_valid_batch()
         # validation batches are only valid batches
         val_loss_dict = model.measure_stats(val_batch, batch_type='valid')
         print ('-------------------------------------------------------')
@@ -1477,12 +1487,12 @@ train_eval_offline(
   summary_freq=250,
   eval_freq=1000,
   add_summary=True,
-  save_dir='./tragos_results_discrete',
+  save_dir=None,
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=100,
+  batch_size=800,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
