@@ -1378,7 +1378,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'./saved_weights_dir/{save_dir}_{step}', overwrite=True)
+      model.save_weights(f'./saved_weights_dir_high_freq/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
@@ -1487,7 +1487,7 @@ train_eval_offline(
   summary_freq=250,
   eval_freq=1000,
   add_summary=True,
-  save_dir=None,
+  save_dir='./tragos_discrete_low_freq',
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
