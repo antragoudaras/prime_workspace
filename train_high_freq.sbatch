@@ -7,8 +7,8 @@
 #SBATCH --constraint=intel
 #SBATCH --partition=batch
 #SBATCH --mail-type=ALL
-#SBATCH --output=./results/%x-%j-slurm.out
-#SBATCH --error=./results/%x-%j-slurm.err
+#SBATCH --output=./results_high_freq/%x-%j-slurm.out
+#SBATCH --error=./results_high_freq/%x-%j-slurm.err
 
 set -e
 module purge
