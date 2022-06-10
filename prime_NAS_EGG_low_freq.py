@@ -1333,7 +1333,7 @@ def train_eval_offline(
     batch = train_problem.get_training_batch()
     #just to build the model
     _ = model.measure_stats(batch, batch_type='valid')
-    model.load_weights(f'./results/{save_dir}_60000')
+    model.load_weights(f'./results/{save_dir}_55000')
   else:
     avg_kendall_loss_list = dict()
     for step in range(train_steps):
@@ -1389,7 +1389,7 @@ def train_eval_offline(
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
     discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
-    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
     best_score = model(inputs=best_firefly, training=False)
@@ -1399,10 +1399,21 @@ def train_eval_offline(
     print('---Predicted scores/error for these accelerator designs-----')
     scores = model(inputs=discrete_optimizer.fireflies, training=False)
     print('{}'.format(scores))
+    
+    random_data = discrete_optimizer.onh_2_integer_conv(discrete_optimizer.fireflies.numpy()).numpy()
+    random_dataset = pd.DataFrame({'param_1': random_data[:, 0], 'param_2': random_data[:, 1], 'param_3': random_data[:, 2], 
+                        'param_4': random_data[:, 3], 'param_5': random_data[:, 4], 'param_6': random_data[:, 5], 
+                        'param_7': random_data[:, 6], 'param_8': random_data[:, 7]})
+    param_7_series = random_dataset['param_7'].squeeze()
+    param_8_series = random_dataset['param_8'].squeeze()
+    random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
+    random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
+    random_dataset.to_csv('./test_dir/random_dataset_optimized_high_freq.csv')
+    random_dataset.to_excel('./test_dir/random_dataset_optimized_high_freq.xlsx')
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
     print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
     best_score2 = model(inputs=best_firefly2, training=False)
@@ -1412,10 +1423,21 @@ def train_eval_offline(
     print('---Predicted scores/error for these accelerator designs-----')
     scores2 = model(inputs=discrete_optimizer2.fireflies, training=False)
     print('{}'.format(scores2))
-
+    
+    train_data = discrete_optimizer2.onh_2_integer_conv(discrete_optimizer2.fireflies.numpy()).numpy()
+    train_dataset = pd.DataFrame({'param_1': train_data[:, 0], 'param_2': train_data[:, 1], 'param_3': train_data[:, 2], 
+                        'param_4': train_data[:, 3], 'param_5': train_data[:, 4], 'param_6': train_data[:, 5], 
+                        'param_7': train_data[:, 6], 'param_8': train_data[:, 7]})
+    param_7_series = train_dataset['param_7'].squeeze()
+    param_8_series = train_dataset['param_8'].squeeze()
+    train_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
+    train_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
+    train_dataset.to_csv('./test_dir/train_dataset_optimized_high_freq.csv')
+    train_dataset.to_excel('./test_dir/train_dataset_optimized_high_freq.xlsx')
+    
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
     print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
     best_score3 = model(inputs=best_firefly3, training=False)
@@ -1426,6 +1448,17 @@ def train_eval_offline(
     scores3 = model(inputs=discrete_optimizer3.fireflies, training=False)
     print('{}'.format(scores3))
     
+    val_data = discrete_optimizer3.onh_2_integer_conv(discrete_optimizer3.fireflies.numpy()).numpy()
+    val_dataset = pd.DataFrame({'param_1': val_data[:, 0], 'param_2': val_data[:, 1], 'param_3': val_data[:, 2], 
+                        'param_4': val_data[:, 3], 'param_5': val_data[:, 4], 'param_6': val_data[:, 5], 
+                        'param_7': val_data[:, 6], 'param_8': val_data[:, 7]})
+    
+    param_7_series = val_dataset['param_7'].squeeze()
+    param_8_series = val_dataset['param_8'].squeeze()
+    val_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
+    val_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
+    val_dataset.to_csv('./test_dir/val_dataset_optimized_high_freq.csv')
+    val_dataset.to_excel('./test_dir/val_dataset_optimized_high_freq.xlsx')
 
 config_str = """discrete:param_1:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54
 discrete:param_2:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
@@ -1492,7 +1525,7 @@ train_eval_offline(
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=800,
+  batch_size=250,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,

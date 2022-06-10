@@ -1333,7 +1333,7 @@ def train_eval_offline(
     batch = train_problem.get_training_batch()
     #just to build the model
     _ = model.measure_stats(batch, batch_type='valid')
-    model.load_weights(f'./results/{save_dir}_60000')
+    model.load_weights(f'./results/{save_dir}_55000')
   else:
     avg_kendall_loss_list = dict()
     for step in range(train_steps):
@@ -1487,12 +1487,12 @@ train_eval_offline(
   summary_freq=250,
   eval_freq=1000,
   add_summary=True,
-  save_dir='./tragos_discrete_low_freq',
+  save_dir='./tragos_discrete_high_freq',
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=800,
+  batch_size=250,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
