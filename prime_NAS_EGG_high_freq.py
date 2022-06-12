@@ -1487,6 +1487,7 @@ df_valid = df_sorted.iloc[train_len + 1 : , :]
 training_data = df_train.to_dict('list')
 validation_data = df_valid.to_dict('list')
 
+# Making all the parameters discrete
 for key in training_data:
     training_data[key] = np.array(training_data[key], dtype=np.float32)
 training_data['param_6'] = np.array(int(1e1)*training_data['param_6'], dtype=np.float32)
@@ -1494,7 +1495,7 @@ training_data['param_7'] = np.array(int(1e2)*training_data['param_7'], dtype=np.
 training_data['param_7'] = np.array(training_data['param_7'], dtype=np.float32)
 training_data['param_8'] = np.array(int(1e4)*training_data['param_8'], dtype=np.int32)
 training_data['param_8'] = np.array(training_data['param_8'], dtype=np.float32) 
-
+# Making all the parameters discrete
 for key in validation_data:
     validation_data[key] = np.array(validation_data[key], dtype=np.float32)
 validation_data['param_6'] = np.array(int(1e1)*validation_data['param_6'], dtype=np.float32)
