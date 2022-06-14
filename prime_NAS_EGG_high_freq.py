@@ -807,7 +807,7 @@ class HardwareOptProblem:
 
     # Choose what kind of batch to provide while training the model
     self.get_training_batch = self.get_all_batch
-    self.get_valid_batch = self.get_full_valid_batch
+    self.get_valid_batch = self.get_all_batch
 
   def get_all_batch(self,):
     """Sample i.i.d. from the entire dataset."""
@@ -1129,7 +1129,7 @@ class FireflyAlg():
       intensity = np.array(intensity_list)
       print('Intensity {}'.format(intensity))
     else: 
-      print('---Initial Random Designs and Scores/Runtimes-----')
+      print('---Initial Designs with predicted Scores/Runtimes-----')
       for single_firefly in self.fireflies:
         print('Design {}'.format(self.onh_2_integer_conv(np.expand_dims(single_firefly.numpy(), axis=0))))
       intensity = model(inputs=self.fireflies, training=False).numpy()
@@ -1389,14 +1389,14 @@ def train_eval_offline(
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
     discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
-    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
+    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
     best_score = model(inputs=best_firefly, training=False)
     print('Score/Error: {}'.format(best_score))
     print('----Full list of optimized designs-----')
     print('{}'.format(discrete_optimizer.onh_2_integer_conv(discrete_optimizer.fireflies.numpy())))
-    print('---Predicted scores/error for these accelerator designs-----')
+    print('---Predicted scores/error for these accelerated designs-----')
     scores = model(inputs=discrete_optimizer.fireflies, training=False)
     print('{}'.format(scores))
     
@@ -1413,7 +1413,7 @@ def train_eval_offline(
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
+    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
     print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
     best_score2 = model(inputs=best_firefly2, training=False)
@@ -1437,7 +1437,7 @@ def train_eval_offline(
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e1), model=model, mode_opt=False)
+    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
     print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
     best_score3 = model(inputs=best_firefly3, training=False)
@@ -1519,14 +1519,14 @@ train_eval_offline(
   validation_dataset=validation_data,
   train_steps=60001,
   summary_freq=250,
-  eval_freq=1000,
+  eval_freq=500,
   add_summary=True,
   save_dir='./tragos_discrete_high_freq',
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=250,
+  batch_size=256,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
