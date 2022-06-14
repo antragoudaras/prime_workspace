@@ -9,7 +9,6 @@
 *.ipynb
 #ignore dataset_folder & results
 /dataset_folder
-/results
 /dataset_high_freq
 /dataset_low_freq
 
