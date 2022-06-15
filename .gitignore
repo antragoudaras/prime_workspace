@@ -7,8 +7,9 @@
 *.png
 #ignore unwaned/old files
 *.ipynb
+#ignore ewnvironments
+/env
 #ignore dataset_folder & results
-/dataset_folder
 /dataset_high_freq
 /dataset_low_freq
 
