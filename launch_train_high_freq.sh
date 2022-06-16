@@ -11,6 +11,6 @@ SRC_DIR="$PROJECT_DIR"
 JOB_RESULTS_DIR="$PROJECT_DIR"/results_high_freq
 mkdir -p "$JOB_RESULTS_DIR"
 
-JOB_NAME=extented_high_freq_train_prime_60000_grad_steps
+JOB_NAME=extented_high_freq_train_prime_60000_grad_steps_batch_size_1000
 
 sbatch --job-name "$JOB_NAME" "$SRC_DIR"/train_high_freq.sbatch
