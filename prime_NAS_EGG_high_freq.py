@@ -1509,6 +1509,8 @@ for key in training_data:
     if key != 'accuracy':
         unique_list.append(np.unique(training_data[f'{key}']))
 print(unique_list)
+for element in unique_list:
+    print(len(element))
 
 print ('Keys in the dataset: ', training_data.keys())
 
