@@ -1408,8 +1408,8 @@ def train_eval_offline(
     param_8_series = random_dataset['param_8'].squeeze()
     random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    random_dataset.to_csv('./results_dir_optimized_datasets/random_dataset_optimized_low_freq.csv')
-    random_dataset.to_excel('./results_dir_optimized_datasets/random_dataset_optimized_low_freq.xlsx')
+    random_dataset.to_csv(f'./results_dir_optimized_datasets/random_dataset_optimized_low_freq_{batch_size}_size.csv')
+    random_dataset.to_excel(f'./results_dir_optimized_datasets/random_dataset_optimized_low_freq_{batch_size}_size.xlsx')
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
@@ -1432,8 +1432,8 @@ def train_eval_offline(
     param_8_series = train_dataset['param_8'].squeeze()
     train_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     train_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    train_dataset.to_csv('./results_dir_optimized_datasets/train_dataset_optimized_low_freq.csv')
-    train_dataset.to_excel('./results_dir_optimized_datasets/train_dataset_optimized_low_freq.xlsx')
+    train_dataset.to_csv(f'./results_dir_optimized_datasets/train_dataset_optimized_low_freq_{batch_size}_size.csv')
+    train_dataset.to_excel(f'./results_dir_optimized_datasets/train_dataset_optimized_low_freq_{batch_size}_size.xlsx')
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
@@ -1457,8 +1457,8 @@ def train_eval_offline(
     param_8_series = val_dataset['param_8'].squeeze()
     val_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     val_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    val_dataset.to_csv('./results_dir_optimized_datasets/val_dataset_optimized_low_freq.csv')
-    val_dataset.to_excel('./results_dir_optimized_datasets/val_dataset_optimized_low_freq.xlsx')
+    val_dataset.to_csv(f'./results_dir_optimized_datasets/val_dataset_optimized_low_freq_{batch_size}_size.csv')
+    val_dataset.to_excel(f'./results_dir_optimized_datasets/val_dataset_optimized_low_freq_{batch_size}_size.xlsx')
 
 config_str = """discrete:param_1:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54
 discrete:param_2:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
@@ -1520,15 +1520,15 @@ train_eval_offline(
   training_dataset=training_data,
   validation_dataset=validation_data,
   train_steps=60001,
-  summary_freq=250,
-  eval_freq=500,
+  summary_freq=100,
+  eval_freq=250,
   add_summary=True,
   save_dir='./tragos_discrete_low_freq',
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=256,
+  batch_size=1000,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
