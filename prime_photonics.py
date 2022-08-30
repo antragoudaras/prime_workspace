@@ -1532,13 +1532,23 @@ discrete:param_3:float64:true:165,170,175,180,185,190,195,200,205,210,215,220,22
 discrete:param_4:float64:true:101,102,103,104,105,106,107,108,109,110,111,
 """
 
-
-df = pd.read_csv(r'./valid_phos_sensor_data.csv',
+df_valid = pd.read_csv(r'./valid_phos_sensor_data.csv',
             index_col=None,
             names=["param_1", "param_2", "param_3", "param_4", "sensitivity"])
-df['infeasible'] = 0
+df_valid['infeasible'] = 0
+df_actual_valid = df_valid.drop_duplicates()
 
-df_actual = df.drop_duplicates()
+df_invalid = pd.read_csv(r'./invalid_phos_sensor_data.csv',
+                index_col=None,
+                names=["param_1", "param_2", "param_3", "param_4"])
+df_invalid['infeasible'] = 1
+df_invalid['sensitivity'] = 0
+df_actual_invalid = df_invalid.drop_duplicates()
+
+df_actual = df_actual_valid.append(df_actual_invalid)
+# df_actual_shuffled = df_actual.sample(frac=1)
+# print(df_actual_shuffled)
+
 df_sorted = df_actual.sort_values(by=["sensitivity"])
 print(df_sorted)
 
@@ -1574,7 +1584,6 @@ for element in unique_list:
 
 print ('Keys in the dataset: ', training_data.keys())
 
- 
 train_eval_offline(
   config=config_str,
   training_dataset=training_data,
