@@ -457,11 +457,11 @@ class PRIMETransformerModel(tf.keras.Model):
     x = TransformerLayer(d_model=64, num_heads=8, dff=256)(x)
     x = TransformerLayer(d_model=64, num_heads=8, dff=256)(x)
     
-    x = tf.keras.layers.Reshape(target_shape=(512,))(x)
+    x = tf.keras.layers.Reshape(target_shape=(256,))(x)
     
     if self.contextual:
       context_input = tf.keras.Input(self.num_contexts)
-      out_context = tf.keras.layers.Dense(512, use_bias=False)(context_input)
+      out_context = tf.keras.layers.Dense(256, use_bias=False)(context_input)
 
       # Pointwise multiply the contexts to make sure that the context
       # conditioning is done properly. From https://arxiv.org/abs/1912.13465.
@@ -533,7 +533,7 @@ class PRIMETransformerModel(tf.keras.Model):
     if not self.contextual:
       transformer_embedding = self._base_network(inputs, training=training)
     else:
-      # TODO(aviralkumar): Fix the hardcoded 77 input dimensionality in code
+      # TODO(antonios): Fix the dimensionality of variable inputs in line 538
       if not isinstance(inputs, list) and not isinstance(inputs, tuple):
         inputs = (inputs[:, 163], inputs[:, 163:])
 
@@ -569,7 +569,7 @@ class PRIMETransformerModel(tf.keras.Model):
     return fwd_model_pred
 
   def compute_loss(self, data_batch, loss_type='mse', training=True,
-                   ranking_penalty_weight=0.0, inp_batch_type='valid'):
+                   ranking_penalty_weight=0.0, inp_batch_type=None):
     """
     Compute the loss function and additional logging metrics for training.
 
@@ -738,7 +738,7 @@ class PRIMETransformerModel(tf.keras.Model):
                     for v in net.trainable_variables]))
     return loss_dict
 
-  def measure_stats(self, batch, batch_type='valid', **kwargs):
+  def measure_stats(self, batch, batch_type=None, **kwargs):
     """Simply make a forward pass through compute_loss to measure losses."""
     loss_dict, _ = self.compute_loss(batch, loss_type='mse+rank',
                                      training=False,
@@ -794,6 +794,13 @@ class HardwareOptProblem:
     if 'batch_size' in params_dict:
       self._batch_size = params_dict['batch_size']
 
+    # Whether to train on infeasible points or not
+    # use 'valid' for feasible points, and 'mixed' for both infeasible and
+    # feasible points
+    self._batch_type = 'valid'
+    if 'batch_type' in params_dict:
+      self._batch_type = params_dict['batch_type']
+
 
     # Add any area constraints or not: this flag enables filtering the data
     # based on whether the area constraint is not satisfied
@@ -804,10 +811,15 @@ class HardwareOptProblem:
     self.dataset = PRIMEDataset(config=config,
                                 data_dict=data_file)
     
-
+    self.feasible_probs, self.infeasible_probs = self.dataset.get_feasible_probs()
     # Choose what kind of batch to provide while training the model
-    self.get_training_batch = self.get_all_batch
-    self.get_valid_batch = self.get_all_batch
+    self.get_training_batch = None
+    if self._batch_type == 'valid':
+      self.get_training_batch = self.get_valid_only_batch
+    elif self._batch_type == 'mixed':
+      self.get_training_batch = self.get_mixed_batch
+    else:
+      self.get_training_batch = self.get_all_batch
 
   def get_all_batch(self,):
     """Sample i.i.d. from the entire dataset."""
@@ -819,10 +831,10 @@ class HardwareOptProblem:
     batch_dict['objective'] = batch_y
     return batch_dict
 
-  def get_full_valid_batch(self,):
-    """Sample i.i.d. from the entire dataset."""
-    indices = np.random.randint(1, 
-                                self.dataset._top, self.dataset.size)
+  def get_valid_only_batch(self,):
+    """Sample only valid samples in the batch."""
+    indices = np.random.randint(np.arange(0, self.dataset._top),
+                                size=self._batch_size, p=self.feasible_probs)
     batch_x, batch_y = self.dataset._get_batch(indices)
     batch_dict = dict()
     batch_dict['design'] = batch_x
@@ -836,6 +848,24 @@ class HardwareOptProblem:
     batch_dict = dict()
     batch_dict['design'] = batch_x
     batch_dict['objective'] = batch_y
+    return batch_dict
+
+  def get_mixed_batch(self,):
+    """Get both valid and invalid samples to train in a batch"""
+    # Should be called when training with invalid samples as negatives
+    valid_indices = np.random.choice(np.arange(0, self.dataset._top),
+                                     size=self._batch_size,
+                                     p=self.feasible_probs)
+    invalid_indices = np.random.choice(np.arange(0, self.dataset._top),
+                                       size=self._batch_size,
+                                       p=self.infeasible_probs)
+    batch_x, batch_y = self.dataset._get_batch(valid_indices)
+    batch_x_in, batch_y_in = self.dataset._get_batch(invalid_indices)
+    batch_dict = dict()
+    batch_dict['design'] = batch_x
+    batch_dict['objective'] = batch_y
+    batch_dict['invalid/design'] = batch_x_in
+    batch_dict['invalid/objective'] = batch_y_in
     return batch_dict
 
 
@@ -855,10 +885,11 @@ class PRIMEDataset(tf.Module):
     self._design_space_dict = {}
     self._segment_lengths = {}
     self._max_ctr = 0
-    self._eval_metric_keys = ['accuracy']
+    self._eval_metric_keys = ['sensitivity']
+    self._validity_keys = ['infeasible',]
 
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
-                                  'param_4', 'param_5', 'param_6', 'param_7', 'param_8']
+                                  'param_4',]
 
     self._tf_dataset = {}
     self._top = 0
@@ -884,15 +915,16 @@ class PRIMEDataset(tf.Module):
 
   def get_score_function(self,):
     """Get the objective function which is being maximized"""
-    accuracy = self._tf_dataset['accuracy'].numpy()
-    scores = accuracy
+    sensitivity = self._tf_dataset['sensitivity'].numpy()
+    scores = sensitivity
     self._tf_dataset['score'] = tf.convert_to_tensor(
         scores, dtype=tf.float32)
+    new_scores = np.delete(scores, np.where(scores==0.0))
     print ('Score stats: ')
     print ('--------------------------------------------')
-    print ('Max: ', scores.max())
-    print ('Mean: ', scores.mean())
-    print ('Min: ', scores.min())
+    print ('Max: ', new_scores.max())
+    print ('Mean: ', new_scores.mean())
+    print ('Min: ', new_scores.min())
     print ('--------------------------------------------')
 
     # Since we need top batch for eval, store top scores
@@ -904,7 +936,7 @@ class PRIMEDataset(tf.Module):
     """Convert the dataset to a tensorflow dataset, easy to read from."""
     tf_dataset = {}
     for key in self._active_training_keys +\
-        self._eval_metric_keys:
+        self._eval_metric_keys + self._validity_keys:
       tf_dataset[key] = []
 
     # Load the data from the data file. Note that most of the fields are
@@ -942,9 +974,9 @@ class PRIMEDataset(tf.Module):
       tf_actual_dataset[key] = tf_actual_temp_dataset[key]
 
     self._tf_dataset = tf_actual_dataset
-    # self._infeasible_np = self._tf_dataset['infeasible'].numpy().astype(
-    #     np.float32)
-    self._top = self._tf_dataset['param_1'].shape[0]
+    self._infeasible_np = self._tf_dataset['infeasible'].numpy().astype(
+        np.float32)
+    self._top = self._infeasible_np.shape[0]
 
   def load_or_refresh_config(self):
     """Load config file with specifications."""
@@ -1017,7 +1049,37 @@ class PRIMEDataset(tf.Module):
       length += val
     return length
 
+  def get_feasible_probs(self, ):
+    """
+    Get the probability of points that are feasible, meaning they don't
+    violate the area constraint and also obtain the feasibility result.  
+    """
+    feasible = (1.0 - self._infeasible_np)
+    print ('Number of feasible points: ', np.sum(feasible))
+    # if add_area_constraints:
+    #   print ('Min area: ', tf.reduce_min(self._tf_dataset['area']))
+    #   feasible_area = (
+    #       self._tf_dataset['area'] <= AREA_THRESHOLD).numpy().astype(np.float32)
+    #   feasible = np.clip(feasible + feasible_area - 1.0,
+    #                      a_min=0.0, a_max=1.0)
+    #   print ('Number of feasible points due to area constraint: ',
+    #          np.sum(feasible_area))
+    #   print ('Number of feasible points after area constraint: ',
+    #          np.sum(feasible))
+    probs = feasible / np.sum(feasible)
+    infeasible_probs = (1.0 - feasible)/ np.sum(1.0 - feasible)
+    return probs, infeasible_probs
   
+  def valid_invalid_data_size(self,):
+    """Get the size of the valid and invalid dataset compositions."""
+    feasible = (1.0 - self._infeasible_np)
+    # if add_area_constraints:
+    #   feasible_area = (
+    #       self._tf_dataset['area'] <= AREA_THRESHOLD).numpy().astype(np.float32)
+    #   feasible = np.clip(feasible + feasible_area - 1.0,
+    #                      a_min=0.0, a_max=1.0)
+    return np.sum(feasible), np.shape(feasible)[0] - np.sum(feasible)
+
   def _get_batch(self, indices):
     """Sample a batch from the dataset."""
     all_train_elements = []  # this is the training elements in one-hot form
@@ -1041,7 +1103,7 @@ class FireflyAlg():
     self._config = config
     self.initial_dataset = initial_dataset
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
-                                  'param_4', 'param_5', 'param_6', 'param_7', 'param_8']
+                                  'param_4']
     self.population = population
     self.alpha = alpha
     self.betamin = betamin
@@ -1090,7 +1152,7 @@ class FireflyAlg():
   def get_best_fireflies(self, ):
     """Find the best desgins existing in the dataset with their scores"""
     fireflies = []
-    scores = self.initial_dataset['accuracy']
+    scores = self.initial_dataset['sensitivity']
     #maximize accuracy
     best_scores = np.argsort(-scores)[:self.population]
 
@@ -1121,7 +1183,7 @@ class FireflyAlg():
   def run_inference(self, num_iters, model, mode_opt=True):
     """The actual implementation of the Firefly Algorithm."""
     if mode_opt:
-      scores = self.initial_dataset['accuracy']
+      scores = self.initial_dataset['sensitivity']
       indices = np.argsort(-scores)[:self.population]
       intensity_list = []
       for index in indices:
@@ -1245,6 +1307,7 @@ def train_eval_offline(
     with_ranking_penalty=False,
     ranking_penalty_weight=0.1,
     batch_size=256,
+    batch_type='mixed',
     # params of the model
     use_dropout=False,
     num_votes=1,
@@ -1274,6 +1337,7 @@ def train_eval_offline(
   
   params_dict = dict()
   params_dict['batch_size'] = batch_size
+  params_dict['batch_type'] = batch_type
   params_dict['add_area_constraints'] = False
   # Defining the problem automatically does dataset loading
   train_problem = HardwareOptProblem(config,
@@ -1284,6 +1348,7 @@ def train_eval_offline(
   val_params_dict['batch_size'] = batch_size
   val_params_dict['add_area_constraints'] = False
   # Only validate on the valid samples in the validation dataset
+  val_params_dict['batch_type'] = 'valid'
   val_problem = HardwareOptProblem(config, validation_dataset,
                                    val_params_dict)
 
@@ -1308,6 +1373,7 @@ def train_eval_offline(
                                            beta_2=opt_betas[1], name='opt')
 
   training_dict = dict()
+  training_dict['training_type'] = batch_type
   training_dict['use_dropout'] = use_dropout
   training_dict['infeasible_alpha'] = infeasible_alpha
   training_dict['input_splits'] = input_splits
@@ -1360,7 +1426,7 @@ def train_eval_offline(
             model.save_weights(os.path.join(save_dir, "ckpt-"+str(step)), overwrite=True)
     
       if step % eval_freq == 0:
-        val_batch = val_problem.get_valid_batch()
+        val_batch = val_problem.get_training_batch()
         # validation batches are only valid batches
         val_loss_dict = model.measure_stats(val_batch, batch_type='valid')
         print ('-------------------------------------------------------')
@@ -1468,8 +1534,9 @@ discrete:param_4:float64:true:101,102,103,104,105,106,107,108,109,110,111,
 
 
 df = pd.read_csv(r'./valid_phos_sensor_data.csv',
-            index_col=0,
+            index_col=None,
             names=["param_1", "param_2", "param_3", "param_4", "sensitivity"])
+df['infeasible'] = 0
 
 df_actual = df.drop_duplicates()
 df_sorted = df_actual.sort_values(by=["sensitivity"])
