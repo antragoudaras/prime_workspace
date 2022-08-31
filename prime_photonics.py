@@ -1529,8 +1529,7 @@ def train_eval_offline(
 config_str = """discrete:param_1:float64:true:450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,678,679,680,681,682,683,684,685,686,687,688,689,690,691,692,693,694,695,696,697,698,699,700,701,702,703,704,705,706,707,708,709,710,711,712,713,714,715,716,717,718,719,720,721,722,723,724,725,726,727,728,729,730,731,732,733,734,735,736,737,738,739,740,741,742,743,744,745,746,747,748,749,750
 discrete:param_2:float64:true:64,65,66,67,68,69,70,71,72,73,74,75
 discrete:param_3:float64:true:165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250
-discrete:param_4:float64:true:101,102,103,104,105,106,107,108,109,110,111,
-"""
+discrete:param_4:float64:true:100,101,102,103,104,105,106,107,108,109,110,111"""
 
 df_valid = pd.read_csv(r'./valid_phos_sensor_data.csv',
             index_col=None,
@@ -1571,12 +1570,12 @@ for key in validation_data:
     validation_data[key] = np.array(validation_data[key], dtype=np.float32)
 validation_data['param_2'] = np.array(int(1e2)*validation_data['param_2'], dtype=np.int32)
 validation_data['param_2'] = np.array(validation_data['param_2'], dtype=np.float32)
-validation_data['param_4'] = np.array(int(1e2)*validation_data['param_2'], dtype=np.int32)
-validation_data['param_4'] = np.array(validation_data['param_2'], dtype=np.float32) 
+validation_data['param_4'] = np.array(int(1e2)*validation_data['param_4'], dtype=np.int32)
+validation_data['param_4'] = np.array(validation_data['param_4'], dtype=np.float32) 
 
 unique_list = []
 for key in training_data:
-    if key != 'sensitivity':
+    if key != 'sensitivity' and key !='infeasible':
         unique_list.append(np.unique(training_data[f'{key}']))
 print(unique_list)
 for element in unique_list:
@@ -1597,11 +1596,11 @@ train_eval_offline(
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=1000,
+  batch_size=375,
   use_dropout=True,
   num_votes=7,
   cql_alpha=1.0,
   infeasible_alpha=1.0,
-  enable_discrete_optimizer=True,
+  enable_discrete_optimizer=False,
   skip_training=False
 )
