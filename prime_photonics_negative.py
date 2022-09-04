@@ -833,8 +833,8 @@ class HardwareOptProblem:
 
   def get_valid_only_batch(self,):
     """Sample only valid samples in the batch."""
-    indices = np.random.randint(np.arange(0, self.dataset._top),
-                                size=self._batch_size, p=self.feasible_probs)
+    indices = np.random.choice(np.arange(0, self.dataset._top),
+                               size=self._batch_size, p=self.feasible_probs)
     batch_x, batch_y = self.dataset._get_batch(indices)
     batch_dict = dict()
     batch_dict['design'] = batch_x
@@ -1068,6 +1068,7 @@ class PRIMEDataset(tf.Module):
     #          np.sum(feasible))
     probs = feasible / np.sum(feasible)
     infeasible_probs = (1.0 - feasible)/ np.sum(1.0 - feasible)
+    # print(f"Inside get_infeasible_probs, feasible_probs: {probs}, infeasible_probs: {infeasible_probs}")
     return probs, infeasible_probs
   
   def valid_invalid_data_size(self,):
@@ -1402,6 +1403,8 @@ def train_eval_offline(
     model.load_weights(f'./results/{save_dir}_55000')
   else:
     avg_kendall_loss_list = dict()
+    mse_train_loss_list = dict()
+    mse_val_loss_list = dict()
     for step in range(train_steps):
       batch = train_problem.get_training_batch()
       # This is just to build the models.
@@ -1415,6 +1418,12 @@ def train_eval_offline(
         # regular logging
         print ('-------------------------------------------------------')
         for key in loss_dict:
+          if key=='mse_loss':
+            if step==0:
+              mse_train_loss_list[key] = []
+              mse_train_loss_list['step'] = []
+            mse_train_loss_list[key].append(loss_dict[key])
+            mse_train_loss_list['step'].append(step)
           tf.summary.scalar('train/' + key, loss_dict[key], step=step)
           print ('Step: ', step, 'train/' + key, ':', loss_dict[key])
         print ('-------------------------------------------------------')
@@ -1437,6 +1446,12 @@ def train_eval_offline(
               avg_kendall_loss_list['step'] = []
             avg_kendall_loss_list[key].append(val_loss_dict[key])
             avg_kendall_loss_list['step'].append(step)
+          elif key=='mse_loss':
+            if step==0:
+                mse_val_loss_list[key]= []
+                mse_val_loss_list['step'] = []
+            mse_val_loss_list[key].append(val_loss_dict[key])
+            mse_val_loss_list['step'].append(step)
           tf.summary.scalar('val/' + key, val_loss_dict[key], step=step)
           print ('Step: ', step, 'val/' + key, ':', val_loss_dict[key])
         print ('-------------------------------------------------------')
@@ -1444,10 +1459,14 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'./saved_weights_dir_high_freq/{save_dir}_{step}', overwrite=True)
+      model.save_weights(f'./final_saved_weights_photonics/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
+    for step in range(len(mse_train_loss_list['step'])):
+      print('Step: {}, train_mse_loss {}'.format(mse_train_loss_list['step'][step], mse_train_loss_list['mse_loss'][step]))      
+    for step in range(len(mse_val_loss_list['step'])):
+      print('Step: {}, val_mse_loss {}'.format(mse_val_loss_list['step'][step], mse_val_loss_list['mse_loss'][step]))
     print('==========================================')
     
 
@@ -1468,14 +1487,13 @@ def train_eval_offline(
     
     random_data = discrete_optimizer.onh_2_integer_conv(discrete_optimizer.fireflies.numpy()).numpy()
     random_dataset = pd.DataFrame({'param_1': random_data[:, 0], 'param_2': random_data[:, 1], 'param_3': random_data[:, 2], 
-                        'param_4': random_data[:, 3], 'param_5': random_data[:, 4], 'param_6': random_data[:, 5], 
-                        'param_7': random_data[:, 6], 'param_8': random_data[:, 7]})
-    param_7_series = random_dataset['param_7'].squeeze()
-    param_8_series = random_dataset['param_8'].squeeze()
-    random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
-    random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    random_dataset.to_csv(f'./results_dir_optimized_datasets/run2_random_dataset_optimized_high_freq_{batch_size}_size.csv')
-    random_dataset.to_excel(f'./results_dir_optimized_datasets/run2_random_dataset_optimized_high_freq_{batch_size}_size.xlsx')
+                        'param_4': random_data[:, 3]})
+    param_2_series = random_dataset['param_2'].squeeze()
+    param_4_series = random_dataset['param_4'].squeeze()
+    random_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
+    random_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
+    # random_dataset.to_csv(f'./photonics_optimized_negative_results_worst_80_split/random_dataset_worst_80_train_split{batch_size}_size.csv')
+    random_dataset.to_excel(f'./photonics_optimized_negative_results_worst_80_split/random_dataset_worst_80_train_split{batch_size}_size.xlsx')
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
@@ -1492,14 +1510,13 @@ def train_eval_offline(
     
     train_data = discrete_optimizer2.onh_2_integer_conv(discrete_optimizer2.fireflies.numpy()).numpy()
     train_dataset = pd.DataFrame({'param_1': train_data[:, 0], 'param_2': train_data[:, 1], 'param_3': train_data[:, 2], 
-                        'param_4': train_data[:, 3], 'param_5': train_data[:, 4], 'param_6': train_data[:, 5], 
-                        'param_7': train_data[:, 6], 'param_8': train_data[:, 7]})
-    param_7_series = train_dataset['param_7'].squeeze()
-    param_8_series = train_dataset['param_8'].squeeze()
-    train_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
-    train_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    train_dataset.to_csv(f'./results_dir_optimized_datasets/run2_train_dataset_optimized_high_freq_{batch_size}_size.csv')
-    train_dataset.to_excel(f'./results_dir_optimized_datasets/run2_train_dataset_optimized_high_freq_{batch_size}_size.xlsx')
+                        'param_4': train_data[:, 3]})
+    param_2_series = train_dataset['param_2'].squeeze()
+    param_4_series = train_dataset['param_4'].squeeze()
+    train_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
+    train_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
+    # train_dataset.to_csv(f'./photonics_optimized_negative_results_worst_80_split/train_dataset_worst_80_train_split{batch_size}_size.csv')
+    train_dataset.to_excel(f'./photonics_optimized_negative_results_worst_80_split/train_dataset_worst_80_train_split{batch_size}_size.xlsx')
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
@@ -1516,15 +1533,14 @@ def train_eval_offline(
     
     val_data = discrete_optimizer3.onh_2_integer_conv(discrete_optimizer3.fireflies.numpy()).numpy()
     val_dataset = pd.DataFrame({'param_1': val_data[:, 0], 'param_2': val_data[:, 1], 'param_3': val_data[:, 2], 
-                        'param_4': val_data[:, 3], 'param_5': val_data[:, 4], 'param_6': val_data[:, 5], 
-                        'param_7': val_data[:, 6], 'param_8': val_data[:, 7]})
+                        'param_4': val_data[:, 3]})
     
-    param_7_series = val_dataset['param_7'].squeeze()
-    param_8_series = val_dataset['param_8'].squeeze()
-    val_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
-    val_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    val_dataset.to_csv(f'./results_dir_optimized_datasets/run2_val_dataset_optimized_high_freq_{batch_size}_size.csv')
-    val_dataset.to_excel(f'./results_dir_optimized_datasets/run2_val_dataset_optimized_high_freq_{batch_size}_size.xlsx')
+    param_2_series = val_dataset['param_2'].squeeze()
+    param_4_series = val_dataset['param_4'].squeeze()
+    val_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
+    val_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
+    # val_dataset.to_csv(f'./photonics_optimized_negative_results_worst_80_split/val_dataset_worst_80_train_split{batch_size}_size.csv')
+    val_dataset.to_excel(f'./photonics_optimized_negative_results_worst_80_split/val_dataset_worst_80_train_split{batch_size}_size.xlsx')
 
 config_str = """discrete:param_1:float64:true:450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,678,679,680,681,682,683,684,685,686,687,688,689,690,691,692,693,694,695,696,697,698,699,700,701,702,703,704,705,706,707,708,709,710,711,712,713,714,715,716,717,718,719,720,721,722,723,724,725,726,727,728,729,730,731,732,733,734,735,736,737,738,739,740,741,742,743,744,745,746,747,748,749,750
 discrete:param_2:float64:true:64,65,66,67,68,69,70,71,72,73,74,75
@@ -1587,11 +1603,11 @@ train_eval_offline(
   config=config_str,
   training_dataset=training_data,
   validation_dataset=validation_data,
-  train_steps=11,
-  summary_freq=10,
-  eval_freq=10,
+  train_steps=60001,
+  summary_freq=100,
+  eval_freq=250,
   add_summary=True,
-  save_dir=None,
+  save_dir="./photonics_saved_weights_negative",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
@@ -1601,6 +1617,6 @@ train_eval_offline(
   num_votes=7,
   cql_alpha=1.0,
   infeasible_alpha=1.0,
-  enable_discrete_optimizer=False,
+  enable_discrete_optimizer=True,
   skip_training=False
 )
