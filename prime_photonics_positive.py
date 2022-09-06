@@ -1399,7 +1399,7 @@ def train_eval_offline(
   if skip_training:
     batch = train_problem.get_training_batch()
     #just to build the model
-    _ = model.measure_stats(batch, batch_type='valid')
+    _ = model.measure_stats(batch)
     model.load_weights(f'./results/{save_dir}_55000')
   else:
     avg_kendall_loss_list = dict()
@@ -1409,7 +1409,7 @@ def train_eval_offline(
       batch = train_problem.get_training_batch()
       # This is just to build the models.
       if step == 0:
-        _ = model.measure_stats(batch, batch_type='valid')
+        _ = model.measure_stats(batch)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
           ranking_penalty_weight=ranking_penalty_weight)

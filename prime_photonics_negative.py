@@ -700,7 +700,7 @@ class PRIMETransformerModel(tf.keras.Model):
       loss_dict['y_value_infeasible'] = tf.clip_by_value(
           loss_dict['y_value_infeasible'], 
           clip_value_min=-1000, clip_value_max=1e6)
-      train_loss = train_loss + self.infeasible_alpha *\
+      train_loss = train_loss - self.infeasible_alpha *\
             loss_dict['y_value_infeasible']
 
       mse_loss_invalid = weighted_mse_loss(
@@ -1399,7 +1399,7 @@ def train_eval_offline(
   if skip_training:
     batch = train_problem.get_training_batch()
     #just to build the model
-    _ = model.measure_stats(batch, batch_type='valid')
+    _ = model.measure_stats(batch)
     model.load_weights(f'./results/{save_dir}_55000')
   else:
     avg_kendall_loss_list = dict()
@@ -1409,7 +1409,7 @@ def train_eval_offline(
       batch = train_problem.get_training_batch()
       # This is just to build the models.
       if step == 0:
-        _ = model.measure_stats(batch, batch_type='valid')
+        _ = model.measure_stats(batch)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
           ranking_penalty_weight=ranking_penalty_weight)
