@@ -7,8 +7,8 @@
 #SBATCH --constraint=intel
 #SBATCH --partition=batch
 #SBATCH --mail-type=ALL
-#SBATCH --output=./results_photonics_positive_worst_80_split_corrected_sign/%x-%j-slurm.out
-#SBATCH --error=./results_photonics_positive_worst_80_split_corrected_sign/%x-%j-slurm.err
+#SBATCH --output=./results_photonics_positive_worst_80_split_correct_param_4/%x-%j-slurm.out
+#SBATCH --error=./results_photonics_positive_worst_80_split_correct_param_4/%x-%j-slurm.err
 
 set -e
 module purge
