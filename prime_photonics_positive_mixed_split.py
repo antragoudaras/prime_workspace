@@ -889,7 +889,7 @@ class PRIMEDataset(tf.Module):
     self._validity_keys = ['infeasible',]
 
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
-                                  'param_4',]
+                                  'param_4']
 
     self._tf_dataset = {}
     self._top = 0
