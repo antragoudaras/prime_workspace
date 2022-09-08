@@ -1605,7 +1605,7 @@ train_eval_offline(
   summary_freq=100,
   eval_freq=250,
   add_summary=True,
-  save_dir="./photonics_saved_weights_positive",
+  save_dir="./photonics_saved_weights_positive_worst_split",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
