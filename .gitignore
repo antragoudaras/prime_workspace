@@ -7,6 +7,8 @@
 *.png
 #ignore unwaned/old files
 *.ipynb
+!test_win.ipynb
+!test.ipynb
 #ignore ewnvironments
 /env
 #ignore dataset_folder & results
