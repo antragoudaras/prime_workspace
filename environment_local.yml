@@ -1,0 +1,13 @@
+name: prime_workspace-env
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.7
+  - ipykernel
+  - pip
+  - pip:
+    - -r requirements.txt
+    

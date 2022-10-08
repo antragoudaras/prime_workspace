@@ -7,13 +7,15 @@
 *.png
 #ignore unwaned/old files
 *.ipynb
-!test_win.ipynb
-!test.ipynb
+# !concat_ECoG_datasets.ipynb
+# !test_win.ipynb
+# !test.ipynb
 #ignore ewnvironments
 /env
 #ignore dataset_folder & results
 /dataset_high_freq
 /dataset_low_freq
+/ECoG_datasets_8000_rows
 
 Firefly.*
 old_firefly*
