@@ -1389,7 +1389,7 @@ def train_eval_offline(
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
     discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
-    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly = discrete_optimizer.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
     best_score = model(inputs=best_firefly, training=False)
@@ -1413,7 +1413,7 @@ def train_eval_offline(
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
     best_score2 = model(inputs=best_firefly2, training=False)
@@ -1437,7 +1437,7 @@ def train_eval_offline(
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
     best_score3 = model(inputs=best_firefly3, training=False)
@@ -1519,7 +1519,7 @@ train_eval_offline(
   config=config_str,
   training_dataset=training_data,
   validation_dataset=validation_data,
-  train_steps=60001,
+  train_steps=10001,
   summary_freq=100,
   eval_freq=250,
   add_summary=True,
@@ -1528,11 +1528,11 @@ train_eval_offline(
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=1000,
+  batch_size=200,
   use_dropout=True,
-  num_votes=7,
-  cql_alpha=1.0,
-  infeasible_alpha=1.0,
+  num_votes=1,
+  cql_alpha=0.1,
+  infeasible_alpha=0.05,
   enable_discrete_optimizer=True,
   skip_training=False
 )

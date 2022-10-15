@@ -16,6 +16,10 @@
 /dataset_high_freq
 /dataset_low_freq
 /ECoG_datasets_8000_rows
+ECoG_discrete_*/
+*_optimized_params/
+*_optimized_datasets/
+saved_weights_*/
 
 Firefly.*
 old_firefly*
