@@ -7,8 +7,8 @@
 #SBATCH --constraint=intel
 #SBATCH --partition=batch
 #SBATCH --mail-type=ALL
-#SBATCH --output=./results_photonics_negative_worst_80_split_corrected_signs/%x-%j-slurm.out
-#SBATCH --error=./results_photonics_negative_worst_80_split_corrected_signs/%x-%j-slurm.err
+#SBATCH --output=./photonics_negative_best_80_split_logs/%x-%j-slurm.out
+#SBATCH --error=./photonics_negative_best_80_split_logs/%x-%j-slurm.err
 
 set -e
 module purge
@@ -17,4 +17,4 @@ module load cudnn/8.1.1-cuda11.2.2
 # Load software stack
 conda activate ./env
 
-python prime_photonics_negative.py
+python prime_photonics_negative_best_split.py
