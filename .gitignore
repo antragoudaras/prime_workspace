@@ -7,9 +7,6 @@
 *.png
 #ignore unwaned/old files
 *.ipynb
-# !concat_ECoG_datasets.ipynb
-# !test_win.ipynb
-# !test.ipynb
 #ignore ewnvironments
 /env
 #ignore dataset_folder & results
