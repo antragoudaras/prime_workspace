@@ -919,12 +919,12 @@ class PRIMEDataset(tf.Module):
     scores = sensitivity
     self._tf_dataset['score'] = tf.convert_to_tensor(
         scores, dtype=tf.float32)
-    new_scores = np.delete(scores, np.where(scores==0.0))
+    # new_scores = np.delete(scores, np.where(scores==0.0))
     print ('Score stats: ')
     print ('--------------------------------------------')
-    print ('Max: ', new_scores.max())
-    print ('Mean: ', new_scores.mean())
-    print ('Min: ', new_scores.min())
+    print ('Max: ', scores.max())
+    print ('Mean: ', scores.mean())
+    print ('Min: ', scores.min())
     print ('--------------------------------------------')
 
     # Since we need top batch for eval, store top scores
@@ -1013,10 +1013,7 @@ class PRIMEDataset(tf.Module):
         ind_field = dict()
         split_line = line.split(':')
         ind_field['data_type'] = split_line[0]
-        if ind_field['data_type'] == 'discrete':
-            ind_field['value_range'] = [int(x) for x in split_line[-1].split(',')]
-        else:
-            ind_field['value_range'] = [float(x) for x in split_line[-1].split(',')]
+        ind_field['value_range'] = [int(x) for x in split_line[-1].split(',')]
         index_vals = np.arange(len(ind_field['value_range']))
         ind_field['mapping_one_hot_to_value'] = zip(
             ind_field['value_range'], index_vals)
@@ -1474,7 +1471,7 @@ def train_eval_offline(
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
     discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
-    best_firefly = discrete_optimizer.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly = discrete_optimizer.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
     best_score = model(inputs=best_firefly, training=False)
@@ -1493,11 +1490,11 @@ def train_eval_offline(
     random_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
     random_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
     # random_dataset.to_csv(f'./photonics_optimized_positive_results_worst_80_split/random_dataset_worst_80_train_split{batch_size}_size.csv')
-    random_dataset.to_excel(f'./photonics_optimized_positive_results_mixed_80_split_correct_param_4/random_dataset_worst_80_train_split{batch_size}_size.xlsx')
+    random_dataset.to_excel(f'./october_photonics_optimized_positive_results_mixed_80_split/random_dataset_{num_votes}_votes.xlsx')
 
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
     discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
     best_score2 = model(inputs=best_firefly2, training=False)
@@ -1516,11 +1513,11 @@ def train_eval_offline(
     train_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
     train_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
     # train_dataset.to_csv(f'./photonics_optimized_positive_results_worst_80_split/train_dataset_worst_80_train_split{batch_size}_size.csv')
-    train_dataset.to_excel(f'./photonics_optimized_positive_results_mixed_80_split_correct_param_4/train_dataset_worst_80_train_split{batch_size}_size.xlsx')
+    train_dataset.to_excel(f'./october_photonics_optimized_positive_results_mixed_80_split/train_dataset_{num_votes}_votes.xlsx')
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
     discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
-    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(1e3), model=model, mode_opt=False)
+    best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
     best_score3 = model(inputs=best_firefly3, training=False)
@@ -1540,33 +1537,35 @@ def train_eval_offline(
     val_dataset['param_2'] = param_2_series.map({64: 0.64, 65: 0.65, 66: 0.66, 67: 0.67, 68: 0.68, 69: 0.69, 70: 0.7, 71: 0.71, 72: 0.72, 73: 0.73, 74: 0.74, 75: 0.75})
     val_dataset['param_4'] = param_4_series.map({100: 1.0, 101: 1.01, 102: 1.02, 103: 1.03, 104: 1.04, 105: 1.05, 106: 1.06, 107: 1.07, 108:1.08, 109: 1.09, 110: 1.1, 111: 1.11})
     # val_dataset.to_csv(f'./photonics_optimized_positive_results_worst_80_split/val_dataset_worst_80_train_split{batch_size}_size.csv')
-    val_dataset.to_excel(f'./photonics_optimized_positive_results_mixed_80_split_correct_param_4/val_dataset_worst_80_train_split{batch_size}_size.xlsx')
+    val_dataset.to_excel(f'./october_photonics_optimized_positive_results_mixed_80_split/val_dataset_{num_votes}_votes.xlsx')
 
 config_str = """discrete:param_1:float64:true:450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,678,679,680,681,682,683,684,685,686,687,688,689,690,691,692,693,694,695,696,697,698,699,700,701,702,703,704,705,706,707,708,709,710,711,712,713,714,715,716,717,718,719,720,721,722,723,724,725,726,727,728,729,730,731,732,733,734,735,736,737,738,739,740,741,742,743,744,745,746,747,748,749,750
 discrete:param_2:float64:true:64,65,66,67,68,69,70,71,72,73,74,75
 discrete:param_3:float64:true:165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250
-discrete:param_4:float64:true:101,102,103,104,105,106,107,108,109,110,111"""
+discrete:param_4:float64:true:100,101,102,103,104,105,106,107,108,109,110,111"""
 
 df_valid = pd.read_csv(r'./valid_phos_sensor_data.csv',
             index_col=None,
             names=["param_1", "param_2", "param_3", "param_4", "sensitivity"])
 df_valid['infeasible'] = 0
 df_actual_valid = df_valid.drop_duplicates()
-df_actual_valid = df_actual_valid[df_actual_valid.param_4 != 1.0] #remove all rows with items that have 1.0 as param_4 column values
-df_actual_shuffled = df_actual_valid.sample(frac=1, random_state=1) #shuffle the valid configs with their sensitivity values
+#df_actual_valid = df_actual_valid[df_actual_valid.param_4 != 1.0] #remove all rows with items that have 1.0 as param_4 column values
 
-valid_train_len = int(0.8 * (len(df_actual_shuffled) - 1)) 
-df_train_valid = df_actual_shuffled.iloc[: valid_train_len, :] #take 80% for train
-df_valid = df_actual_shuffled.iloc[valid_train_len + 1 : , :] # take 20% as test/validation
 
 df_invalid = pd.read_csv(r'./invalid_phos_sensor_data.csv',
                 index_col=None,
                 names=["param_1", "param_2", "param_3", "param_4"])
 df_invalid['infeasible'] = 1
-df_invalid['sensitivity'] = 0
+df_invalid['sensitivity'] = -100
 df_actual_invalid = df_invalid.drop_duplicates()
-df_actual_invalid = df_actual_invalid[df_actual_invalid.param_4 != 1.0] #remove all rows with items that have 1.0 as param_4 column values
-df_train = df_train_valid.append(df_actual_invalid)
+# df_actual_invalid = df_actual_invalid[df_actual_invalid.param_4 != 1.0] #remove all rows with items that have 1.0 as param_4 column values
+df_total = df_actual_valid.append(df_actual_invalid)
+
+df_actual_shuffled = df_total.sample(frac=1, random_state=1) #shuffle the valid configs with their sensitivity values
+
+valid_train_len = int(0.8 * (len(df_actual_shuffled) - 1)) 
+df_train = df_actual_shuffled.iloc[: valid_train_len, :] #take 80% for train
+df_valid = df_actual_shuffled.iloc[valid_train_len + 1 : , :] # take 20% as test/validation
 
 training_data = df_train.to_dict('list')
 validation_data = df_valid.to_dict('list')
@@ -1586,12 +1585,20 @@ validation_data['param_2'] = np.array(validation_data['param_2'], dtype=np.float
 validation_data['param_4'] = np.array(int(1e2)*validation_data['param_4'], dtype=np.int32)
 validation_data['param_4'] = np.array(validation_data['param_4'], dtype=np.float32) 
 
-unique_list = []
+train_unique_list = []
 for key in training_data:
     if key != 'sensitivity' and key !='infeasible':
-        unique_list.append(np.unique(training_data[f'{key}']))
-print(unique_list)
-for element in unique_list:
+        train_unique_list.append(np.unique(training_data[f'{key}']))
+print("Unique elements in training_data: {}".format(train_unique_list))
+for element in train_unique_list:
+    print(len(element))
+
+val_unique_list = []
+for key in validation_data:
+    if key != 'sensitivity' and key !='infeasible':
+        val_unique_list.append(np.unique(validation_data[f'{key}']))
+print("Unique elements in validation_data: {}".format(val_unique_list))
+for element in val_unique_list:
     print(len(element))
 
 print ('Keys in the dataset: ', training_data.keys())
@@ -1602,18 +1609,18 @@ train_eval_offline(
   validation_dataset=validation_data,
   train_steps=60001,
   summary_freq=100,
-  eval_freq=250,
+  eval_freq=500,
   add_summary=True,
-  save_dir="./photonics_saved_weights_positive_mixed_split",
+  save_dir="positive_mixed_split_num_votes_one",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
   ranking_penalty_weight=0.1,
-  batch_size=236,
+  batch_size=53,
   use_dropout=True,
-  num_votes=7,
-  cql_alpha=1.0,
-  infeasible_alpha=1.0,
+  num_votes=1,
+  cql_alpha=0.1,
+  infeasible_alpha=0.05,
   enable_discrete_optimizer=True,
   skip_training=False
 )
