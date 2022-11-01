@@ -1620,7 +1620,7 @@ train_eval_offline(
   summary_freq=100,
   eval_freq=100,
   add_summary=True,
-  save_dir=f"positive_mixed_split_{args.train_setps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha",
+  save_dir=f"positive_mixed_split_{args.train_steps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
