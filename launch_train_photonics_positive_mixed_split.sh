@@ -17,7 +17,7 @@ mkdir -p "$EXCEL_RESULTS_DIR"
 CQL_ALPHA=0.01
 INFEASIBLE_ALPHA=1.0
 NUM_VOTES=1
-TRAIN_STEPS=120001
+TRAIN_STEPS=200001
 
 JOB_NAME=PRIME_photonics_${TRAIN_STEPS}_grad_steps_mixed_split_${NUM_VOTES}_votes_${CQL_ALPHA}_cql_alpha_${INFEASIBLE_ALPHA}_infeasible_alpha
 
