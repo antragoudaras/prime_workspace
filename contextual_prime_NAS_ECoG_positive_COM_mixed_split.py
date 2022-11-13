@@ -6,17 +6,19 @@ from absl import logging
 # Google colab runtime. If you want to run this code locally,
 # make sure to install tensorflow and tensorflow_probability.
 
-import tensorflow.compat.v2 as tf
-import tensorflow_probability as tfp
 import pandas as pd
 import numpy as np
-import os
+import os, logging
 import pickle
 import csv
 from typing import Optional, Dict, List
 from copy import deepcopy
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+logging.disable(logging.WARNING) 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import tensorflow.compat.v2 as tf
+import tensorflow_probability as tfp
+
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
 gfile = tf.io.gfile.GFile
 
@@ -223,7 +225,7 @@ def ranking_loss(input, target, context=None):
     all_corr = []
     for idx in range(unique_contexts.shape[0]):
       curr_context = unique_contexts[idx]
-      locations_idx = tf.squeeze(tf.where(tf.equal(indices, curr_context)))
+      locations_idx = tf.squeeze(tf.where(tf.equal([unique_contexts[item] for item in indices], curr_context)))
       input_tmp = tf.gather(
           tf.squeeze(input), indices=locations_idx)
       target_tmp = tf.gather(
@@ -239,7 +241,7 @@ def ranking_loss(input, target, context=None):
                            (input_ranks - tf.reduce_mean(input_ranks)))
       pearson_corr = cov/ (std_target * std_input)
       all_corr.append(pearson_corr)
-    print (all_corr)
+    # print (all_corr)
     pearson_corr = tf.reduce_mean(pearson_corr)
   else:
     input = tf.squeeze(input)
@@ -264,7 +266,7 @@ def ranking_trainable_loss(input, target, context=None):
     all_corr = []
     for idx in range(unique_contexts.shape[0]):
       curr_context = unique_contexts[idx]
-      locations_idx = tf.squeeze(tf.where(tf.equal(indices, curr_context)))
+      locations_idx = tf.squeeze(tf.where(tf.equal([unique_contexts[item] for item in indices], curr_context)))
       input_tmp = tf.expand_dims(tf.gather(
           tf.squeeze(input), indices=locations_idx), 1)
       target_tmp = tf.expand_dims(tf.gather(
@@ -298,7 +300,7 @@ def kendall_correlation(input, target, context=None):
     all_corr = []
     for idx in range(unique_contexts.shape[0]):
       curr_context = unique_contexts[idx]
-      locations_idx = tf.squeeze(tf.where(tf.equal(indices, curr_context)))
+      locations_idx = tf.squeeze(tf.where(tf.equal([unique_contexts[item] for item in indices], curr_context)))
       input_tmp = tf.expand_dims(tf.gather(
           tf.squeeze(input), indices=locations_idx), 1)
       target_tmp = tf.expand_dims(tf.gather(
@@ -535,7 +537,7 @@ class PRIMETransformerModel(tf.keras.Model):
     else:
       # TODO(aviralkumar): Fix the hardcoded 77 input dimensionality in code
       if not isinstance(inputs, list) and not isinstance(inputs, tuple):
-        inputs = (inputs[:, 163], inputs[:, 163:])
+        inputs = (inputs[:, :163], inputs[:, 163:])
 
       transformer_embedding = self._base_network(inputs, training=training)
       
@@ -822,12 +824,12 @@ class HardwareOptProblem:
     """Sample i.i.d. from the entire dataset."""
     indices = np.random.randint(1, 
                                 self.dataset._top, self._batch_size)
-    batch_x, batch_y, batch_z = self.dataset._get_contextual_batch(indices)
+    batch_x, batch_y, batch_context, batch_raw_context= self.dataset._get_contextual_batch(indices)
     batch_dict = dict()
     batch_dict['design'] = batch_x
     batch_dict['objective'] = batch_y
-    batch_dict['context_id'] = batch_z
-    batch_dict['raw_context'] = batch_z
+    batch_dict['context_id'] = batch_context
+    batch_dict['raw_context'] = batch_raw_context
     return batch_dict
 
   def get_full_valid_batch(self,):
@@ -866,10 +868,12 @@ class PRIMEDataset(tf.Module):
     self._design_space_dict = {}
     self._segment_lengths = {}
     self._max_ctr = 0
-    self._eval_metric_keys = ['accuracy', 'subject_id']
+    self._eval_metric_keys = ['accuracy']
 
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
                                   'param_4', 'param_5', 'param_6', 'param_7', 'param_8']
+
+    self._context_keys = ['subject_id']
 
     self._tf_dataset = {}
     self._top = 0
@@ -931,11 +935,12 @@ class PRIMEDataset(tf.Module):
         tf_actual_dataset[p] = tf.cast(tf_actual_dataset[p], tf.int32)
 
     self._design_space_dict_copy = deepcopy(self._design_space_dict)
-
+    real_values_dataset = deepcopy(tf_actual_dataset)
     # Now convert the dataset to actually use one-hot representations. This is
     # used for training, and so it is important to use this.
     tf_actual_temp_dataset = {}
-    for key in self._active_training_keys:
+    for key in self._active_training_keys +\
+        self._context_keys:
       design_space_map = dict(
           self._design_space_dict[key]['mapping_one_hot_to_value'])
       if self._design_space_dict[key]['data_type'] == 'discrete':
@@ -953,6 +958,7 @@ class PRIMEDataset(tf.Module):
       tf_actual_dataset[key] = tf_actual_temp_dataset[key]
 
     self._tf_dataset = tf_actual_dataset
+    self._tf_dataset['raw_context'] = real_values_dataset['subject_id']
     # self._infeasible_np = self._tf_dataset['infeasible'].numpy().astype(
     #     np.float32)
     self._top = self._tf_dataset['param_1'].shape[0]
@@ -1061,14 +1067,16 @@ class PRIMEDataset(tf.Module):
     # Eval keys
     all_test_elements = tf.expand_dims(
         tf.gather(self._tf_dataset['score'], indices), 1)
-    all_context_elements = tf.expand_dims(
-        tf.gather(self._tf_dataset['subject_id'], indices), 1)
-    return tf.concat(all_train_elements, 1), all_test_elements, all_context_elements
+    context_elements = tf.one_hot(tf.gather(self._tf_dataset['subject_id'], indices),
+                                  depth=3)
+    raw_context_elements = tf.expand_dims(
+        tf.gather(self._tf_dataset['raw_context'], indices), 1)
+    return tf.concat(all_train_elements, 1), all_test_elements, context_elements, raw_context_elements
 
 
 #@title Firefly Discrete Optimizer used after supervised training
 class FireflyAlg():
-  def __init__(self, initial_dataset:dict, config:dict, population=23, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True, random_fireflies=True):
+  def __init__(self, initial_dataset:dict, config:dict, population=25, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True, random_fireflies=True, contextual=False):
     self._config = config
     self.initial_dataset = initial_dataset
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
@@ -1079,10 +1087,14 @@ class FireflyAlg():
     self.gamma = gamma
     self.remainder = remainder
     self.random_fireflies = random_fireflies
+    self.contextual = contextual
 
     self._setup_datset()
     if self.random_fireflies:
-      self.fireflies = self.generate_fireflies(self.population)
+      if not self.contextual:
+        self.fireflies = self.generate_fireflies(self.population)
+      else:
+        self.fireflies, self.contexts = self.generate_fireflies_contextual(self.population)
     else:
       self.fireflies = self.get_best_fireflies()
   def _setup_datset(self,):
@@ -1148,8 +1160,26 @@ class FireflyAlg():
         onh_list.append(add_element)
       random_design_np = np.concatenate(onh_list, axis=1).squeeze(axis=0)
       fireflies.append(random_design_np)
-    return tf.convert_to_tensor(fireflies, dtype=tf.float32)   
-  def run_inference(self, num_iters, model, mode_opt=True):
+    return tf.convert_to_tensor(fireflies, dtype=tf.float32)
+
+  def generate_fireflies_contextual(self, num_fireflies):
+    """Initial M number of fireflies to random valid designs."""
+    fireflies = []
+    contexts = []
+    for _ in range(num_fireflies):
+      onh_list = []
+      for length in self.split_lengths:
+        add_element = self.rand_bin_array(ones=1, length=length)
+        add_element = np.expand_dims(add_element, axis=0)
+        onh_list.append(add_element)
+      random_design_np = np.concatenate(onh_list, axis=1).squeeze(axis=0)
+      fireflies.append(random_design_np)
+      rand_context = self.rand_bin_array(ones=1, length=self._segment_lengths[self._design_space_dict['subject_id']['ctr']])
+      rand_context = np.expand_dims(rand_context, axis=0)
+      contexts.append(rand_context)
+    return tf.convert_to_tensor(fireflies, dtype=tf.float32), tf.convert_to_tensor(contexts, dtype=tf.float32)
+
+  def run_inference(self, num_iters, model, mode_opt=True): #change model to use contexts
     """The actual implementation of the Firefly Algorithm."""
     if mode_opt:
       scores = self.initial_dataset['accuracy']
@@ -1353,6 +1383,7 @@ def train_eval_offline(
         layers=layers,
         penalty_weight=cql_alpha,
         negative_sampler=None,
+        contextual=True,
         params_dict=training_dict)
   
 
@@ -1499,7 +1530,8 @@ discrete:param_4:float64:true:50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
 discrete:param_5:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29
 discrete:param_6:float64:true:2,3,4,5,6,7,8
 discrete:param_7:float64:true:1,2,3,4,5,6,7,8,9
-discrete:param_8:float64:true:0,1,2,3,4,5,6,7,9"""
+discrete:param_8:float64:true:0,1,2,3,4,5,6,7,9
+discrete:subject_id:float64:true:1,2,3"""
 
 
 df = pd.read_csv(r'./bci_iv_ECoG_1_out_of_80_contextual_november.csv',
@@ -1551,9 +1583,9 @@ train_eval_offline(
   config=config_str,
   training_dataset=training_data,
   validation_dataset=validation_data,
-  train_steps=1001,
-  summary_freq=100,
-  eval_freq=100,
+  train_steps=101,
+  summary_freq=10,
+  eval_freq=25,
   add_summary=True,
   save_dir=None,
   loss_type='mse+rank',
