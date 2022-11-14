@@ -1076,7 +1076,7 @@ class PRIMEDataset(tf.Module):
 
 #@title Firefly Discrete Optimizer used after supervised training
 class FireflyAlg():
-  def __init__(self, initial_dataset:dict, config:dict, population=25, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True, random_fireflies=True, contextual=False):
+  def __init__(self, initial_dataset:dict, config:dict, population=25, alpha=1.0, betamin=1.0, gamma=1.0, remainder=True, contextual=False, num_contexts: Optional[int] = None):
     self._config = config
     self.initial_dataset = initial_dataset
     self._active_training_keys = ['param_1', 'param_2', 'param_3',
@@ -1086,16 +1086,14 @@ class FireflyAlg():
     self.betamin = betamin
     self.gamma = gamma
     self.remainder = remainder
-    self.random_fireflies = random_fireflies
     self.contextual = contextual
-
+    if self.contextual:
+      self.num_contexts = num_contexts
+      self._context_keys = ['subject_id']
     self._setup_datset()
-    if self.random_fireflies:
-      if not self.contextual:
-        self.fireflies = self.generate_fireflies(self.population)
-      else:
-        self.fireflies, self.contexts = self.generate_fireflies_contextual(self.population)
-    else:
+    if self.initial_dataset is None: # random fireflies
+        self.fireflies = self.generate_fireflies(num_fireflies=self.population)
+    else: # best fireflies
       self.fireflies = self.get_best_fireflies()
   def _setup_datset(self,):
     """Construct a proper datset for the FireflyAlg object, needed for the conversion function below."""
@@ -1124,32 +1122,59 @@ class FireflyAlg():
     if total_length_split > 0:
       split_lenghts.append(total_length_split)  
     self.split_lengths = split_lenghts
-  def rand_bin_array(self, length, ones=1):
+  
+  @staticmethod
+  def rand_bin_array(length, ones=1):
     arr = np.zeros(length)
-    arr[:ones]  = 1
+    arr[:ones] = 1
     np.random.shuffle(arr)
     return arr
-  
+
+  @staticmethod
+  def context_array(length, position): 
+    """Contexts in one-hot representation"""
+    arr = np.zeros(length)
+    arr[position] = 1
+    return arr
+
   def get_best_fireflies(self, ):
     """Find the best desgins existing in the dataset with their scores"""
     fireflies = []
-    scores = self.initial_dataset['accuracy']
-    #maximize accuracy
-    best_scores = np.argsort(-scores)[:self.population]
+    if not self.contextual:
+      scores = self.initial_dataset['accuracy']
+      #maximize accuracy
+      best_scores = np.argsort(-scores)[:self.population] #indices
 
-    #print the scores and the designs
-    print('---Initial Designs and Scores/Runtimes-----')
-    for idx, firefly in enumerate(best_scores):
-      designs = []
-      for key in self._active_training_keys:
-        designs.append(self.initial_dataset[key][firefly])
-      print('{} Score: {}'.format(idx+1, scores[firefly]))
-      print('{} Design: {}'.format(idx+1, designs))
-      designs = np.expand_dims(np.array(designs), axis=0)
-      fireflies.append(designs)
-    integer_fireflies = np.array(fireflies).squeeze(axis=1)
+      #print the scores and the designs
+      print('---Initial Designs Parameters and Scores/Runtimes-----')
+      for idx, firefly in enumerate(best_scores):
+        designs = []
+        for key in self._active_training_keys:
+          designs.append(self.initial_dataset[key][firefly])
+        print('{} Score: {}'.format(idx+1, scores[firefly]))
+        print('{} Design: {}'.format(idx+1, designs))
+        designs = np.expand_dims(np.array(designs), axis=0)
+        fireflies.append(designs)
+      integer_fireflies = np.array(fireflies).squeeze(axis=1)
+    else:
+      scores = self.initial_dataset['accuracy']
+      #maximize accuracy
+      best_scores = np.argsort(-scores)[:self.population] #indices
+
+      #print the scores and the designs
+      print('---Initial Designs Parameters & Context and Scores/Runtimes-----')
+      for idx, firefly in enumerate(best_scores):
+        designs = []
+        for key in self._active_training_keys + self._context_keys:
+          designs.append(self.initial_dataset[key][firefly])
+        print('{} Score: {}'.format(idx+1, scores[firefly]))
+        print('{} Design: {}'.format(idx+1, designs))
+        designs = designs[:-1] #remove the context from the lyst
+        designs = np.expand_dims(np.array(designs), axis=0)
+        fireflies.append(designs)
+      integer_fireflies = np.array(fireflies).squeeze(axis=1)
     return self.integer_2_onh_conv(integer_fireflies)
-  def generate_fireflies(self, num_fireflies):
+  def generate_fireflies(self, num_fireflies: int):
     """Initial M number of fireflies to random valid designs."""
     fireflies = []
     for _ in range(num_fireflies):
@@ -1162,23 +1187,15 @@ class FireflyAlg():
       fireflies.append(random_design_np)
     return tf.convert_to_tensor(fireflies, dtype=tf.float32)
 
-  def generate_fireflies_contextual(self, num_fireflies):
-    """Initial M number of fireflies to random valid designs."""
-    fireflies = []
+  def generate_contexts_vectors(self, ):
+    """Generate all possible context vectors based on the num of contexts."""
     contexts = []
-    for _ in range(num_fireflies):
-      onh_list = []
-      for length in self.split_lengths:
-        add_element = self.rand_bin_array(ones=1, length=length)
-        add_element = np.expand_dims(add_element, axis=0)
-        onh_list.append(add_element)
-      random_design_np = np.concatenate(onh_list, axis=1).squeeze(axis=0)
-      fireflies.append(random_design_np)
-      rand_context = self.rand_bin_array(ones=1, length=self._segment_lengths[self._design_space_dict['subject_id']['ctr']])
-      rand_context = np.expand_dims(rand_context, axis=0)
-      contexts.append(rand_context)
-    return tf.convert_to_tensor(fireflies, dtype=tf.float32), tf.convert_to_tensor(contexts, dtype=tf.float32)
-
+    for idx in range(self.num_contexts):
+      context = self.context_array(length=self.num_contexts, position=idx)
+      context = np.expand_dims(context, axis=0)
+      contexts.append(context)
+    return tf.convert_to_tensor(contexts, dtype=tf.float32)
+  
   def run_inference(self, num_iters, model, mode_opt=True): #change model to use contexts
     """The actual implementation of the Firefly Algorithm."""
     if mode_opt:
@@ -1193,8 +1210,20 @@ class FireflyAlg():
       print('---Initial Designs with predicted Scores/Runtimes-----')
       for single_firefly in self.fireflies:
         print('Design {}'.format(self.onh_2_integer_conv(np.expand_dims(single_firefly.numpy(), axis=0))))
-      intensity = model(inputs=self.fireflies, training=False).numpy()
-      print('Scores: {}'.format(intensity))
+      if not self.contextual:
+        intensity = model(inputs=self.fireflies, training=False).numpy()
+        print('Scores: {}'.format(intensity))
+      else:
+        contexts = self.generate_contexts_vectors()
+        contextual_intensity_list = [] 
+        for context in contexts:
+          context_correct_size = np.array([deepcopy(context) for _ in range(self.fireflies.shape[0])]).squeeze(axis=1)
+          context_tf = tf.convert_to_tensor(context_correct_size, dtype=tf.float32)
+          contextual_intensity = model((self.fireflies, context_tf), training=False).numpy()
+          contextual_intensity_list.append(contextual_intensity)
+        contextual_intensity_np = np.array(contextual_intensity_list).squeeze(axis=-1)
+        intensity = np.expand_dims(np.mean(contextual_intensity_np, axis=0), axis=-1)
+        print('Scores average across all context: {}'.format(intensity))
     
     best = np.max(intensity)
     best_arg = np.argmax(intensity)
@@ -1216,7 +1245,19 @@ class FireflyAlg():
             beta = self.betamin * np.exp(-self.gamma * r)
             temp_firefly = self.single_param_serach(int_fireflies[i].copy(), int_fireflies[j].copy(), new_alpha, beta)
             new_firefly = self.integer_2_onh_conv(np.expand_dims(temp_firefly, axis=0))
-            new_intensity = model(inputs=new_firefly, training=False).numpy()
+            
+            if not self.contextual:
+              new_intensity = model(inputs=new_firefly, training=False).numpy()
+            else:
+              # contexts = self.generate_contexts_vectors()
+              contextual_intensity_list = []
+              for context in contexts:
+                context_tf = tf.convert_to_tensor(deepcopy(context), dtype=tf.float32)
+                contextual_intensity = model((new_firefly, context_tf), training=False).numpy()
+                contextual_intensity_list.append(contextual_intensity)
+              contextual_intensity_np = np.array(contextual_intensity_list).squeeze(axis=-1)
+              new_intensity = np.mean(contextual_intensity_np, axis=0)
+            
             if new_intensity > intensity[i]:
               intensity_count += 1
               int_fireflies[i] = temp_firefly.copy()
@@ -1234,7 +1275,7 @@ class FireflyAlg():
     print('Intensity count: {}, Best count: {}'.format(intensity_count, best_count))
     return tf.convert_to_tensor(best_firefly, dtype=tf.float32)
   def onh_2_integer_conv(self, onh_fireflies):
-    """Convert the given one-hot enconding with shape (N, 77) to integer encoding with shape (N, 10)."""
+    """Convert the given one-hot enconding with shape (N, sum of split_lenghts) to integer encoding with shape (N, num_params)."""
     integer_enc = []
     for i in range(onh_fireflies.shape[0]):
       index = 0
@@ -1248,7 +1289,7 @@ class FireflyAlg():
           integer_enc.append(np.array(integer_row))
     return tf.convert_to_tensor(integer_enc, dtype=tf.float32)
   def integer_2_onh_conv(self, int_fireflies):
-    """Convert the given integer enconding with shape (N, 10) to one-hot encoding with shape (N, 77)."""
+    """Convert the given integer enconding with shape (N, params) to one-hot encoding with shape (N, sum of split_lengths)."""
     onh_enc = []
     for i in range(int_fireflies.shape[0]):
       onh_row = []
@@ -1451,16 +1492,36 @@ def train_eval_offline(
   if enable_discrete_optimizer:
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for random designs')
     # initial_dataset = mergeDictionary(training_dataset, validation_dataset)
-    discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, random_fireflies=True)
+    discrete_optimizer = FireflyAlg(initial_dataset=None, config=config, population=25, remainder=True, contextual=model.contextual, num_contexts=model.num_contexts)
     best_firefly = discrete_optimizer.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer.onh_2_integer_conv(best_firefly.numpy())))
-    best_score = model(inputs=best_firefly, training=False)
+    if not model.contextual:
+      best_score = model(inputs=best_firefly, training=False)
+    else:
+      contexts = discrete_optimizer.generate_contexts_vectors()
+      contextual_score_list = []
+      for context in contexts:
+        context_tf = tf.convert_to_tensor(deepcopy(context), dtype=tf.float32)
+        contextual_score = model((best_firefly, context_tf), training=False).numpy()
+        contextual_score_list.append(contextual_score)
+      contextual_score_np = np.array(contextual_score_list).squeeze(axis=-1)
+      best_score = np.mean(contextual_score_np, axis=0)
     print('Score/Error: {}'.format(best_score))
     print('----Full list of optimized designs-----')
     print('{}'.format(discrete_optimizer.onh_2_integer_conv(discrete_optimizer.fireflies.numpy())))
     print('---Predicted scores/error for these accelerated designs-----')
-    scores = model(inputs=discrete_optimizer.fireflies, training=False)
+    if not model.contextual:
+      scores = model(inputs=discrete_optimizer.fireflies, training=False)
+    else:
+      contextual_score_list = [] 
+      for context in contexts:
+        context_correct_size = np.array([deepcopy(context) for _ in range(discrete_optimizer.fireflies.shape[0])]).squeeze(axis=1)
+        context_tf = tf.convert_to_tensor(context_correct_size, dtype=tf.float32)
+        contextual_score = model((discrete_optimizer.fireflies, context_tf), training=False).numpy()
+        contextual_score_list.append(contextual_score)
+      contextual_intensity_np = np.array(contextual_score_list).squeeze(axis=-1)
+      scores = np.expand_dims(np.mean(contextual_intensity_np, axis=0), axis=-1)
     print('{}'.format(scores))
     
     random_data = discrete_optimizer.onh_2_integer_conv(discrete_optimizer.fireflies.numpy()).numpy()
@@ -1471,11 +1532,12 @@ def train_eval_offline(
     param_8_series = random_dataset['param_8'].squeeze()
     random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-    random_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.xlsx')
+    # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
+    # random_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.xlsx')
 
+    #do the same changes for training set and validation set of Firefly population
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
-    discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, random_fireflies=False)
+    discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, contextual=model.contextual, num_contexts=model.num_contexts)
     best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
@@ -1495,11 +1557,11 @@ def train_eval_offline(
     param_8_series = train_dataset['param_8'].squeeze()
     train_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     train_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    train_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split.csv')
-    train_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split.xlsx')
+    # train_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split.csv')
+    # train_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split.xlsx')
     
     print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
-    discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, random_fireflies=False)
+    discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, contextual=model.contextual, num_contexts=model.num_contexts)
     best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
     print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
     print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
@@ -1520,8 +1582,8 @@ def train_eval_offline(
     param_8_series = val_dataset['param_8'].squeeze()
     val_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
     val_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    val_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split.csv')
-    val_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split.xlsx')
+    # val_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split.csv')
+    # val_dataset.to_excel(f'./ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split.xlsx')
 
 config_str = """discrete:param_1:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54
 discrete:param_2:float64:true:10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
@@ -1583,9 +1645,9 @@ train_eval_offline(
   config=config_str,
   training_dataset=training_data,
   validation_dataset=validation_data,
-  train_steps=101,
+  train_steps=31,
   summary_freq=10,
-  eval_freq=25,
+  eval_freq=10,
   add_summary=True,
   save_dir=None,
   loss_type='mse+rank',

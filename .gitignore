@@ -26,3 +26,5 @@ click*
 datasett*
 egg_CNN_dataset*
 newest_egg_CNN_dataset*
+#ignore .vscode
+.vscode/
