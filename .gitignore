@@ -17,6 +17,7 @@ ECoG_discrete_*/
 *_optimized_params/
 *_optimized_datasets/
 saved_weights_*/
+ECoG_contextual_november_datasets_folder/
 
 Firefly.*
 old_firefly*
