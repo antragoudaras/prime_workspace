@@ -25,7 +25,7 @@ parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
 parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
 parser.add_argument("--train_steps", type=int, default=60000, help="A search state file to resume from")
-parser.add_argument("--batch_size", type=int, default=1000, help="A search state file to resume from")
+parser.add_argument("--batch_size", type=int, default=250, help="A search state file to resume from")
 args = parser.parse_args()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
@@ -1490,7 +1490,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'./saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
+      model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))

@@ -18,7 +18,7 @@ CQL_ALPHA=0.1
 INFEASIBLE_ALPHA=0.05
 NUM_VOTES=1
 TRAIN_STEPS=60000
-BATCH_SIZE=1000
+BATCH_SIZE=500
 
 JOB_NAME=PRIME_contextual_ECoG_positive_COM_mixed_split_${TRAIN_STEPS}_grad_steps_mixed_split_${NUM_VOTES}_votes_${CQL_ALPHA}_cql_alpha_${INFEASIBLE_ALPHA}_infeasible_alpha
 
