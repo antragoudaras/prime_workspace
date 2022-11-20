@@ -24,7 +24,7 @@ parser = argparse.ArgumentParser("hyperparameter Tuning for PRIME")
 parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha")
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
 parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
-parser.add_argument("--train_steps", type=int, default=60000, help="A search state file to resume from")
+parser.add_argument("--train_steps", type=int, default=10001, help="A search state file to resume from")
 parser.add_argument("--batch_size", type=int, default=250, help="A search state file to resume from")
 args = parser.parse_args()
 
@@ -1445,7 +1445,7 @@ def train_eval_offline(
     batch = train_problem.get_training_batch()
     #just to build the model
     _ = model.measure_stats(batch, batch_type='valid')
-    model.load_weights(f'./results/{save_dir}_60001')
+    model.load_weights(f'results/{save_dir}_60001')
   else:
     avg_kendall_loss_list = dict()
     for step in range(train_steps):
@@ -1453,6 +1453,7 @@ def train_eval_offline(
       # This is just to build the models.
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
+        model.load_weights(os.path.join("contextual_ECoG_mixed_split_positive_COM_50000_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_250_batch_size", "ckpt-50000"))
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
           ranking_penalty_weight=ranking_penalty_weight)
@@ -1490,7 +1491,8 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
+      model.save_weights(os.path.join("saved_weights_ECoG_contectual", save_dir+"_"+str(step+1)), overwrite=True)
+      # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
@@ -1542,7 +1544,7 @@ def train_eval_offline(
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
       # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-      random_dataset.to_excel(f'./contextual_ECoG_positive_COM_optimized_params_november/random_dataset_{idx+1}_optimized_mixed_split_contextual.xlsx')
+      random_dataset.to_excel(f'contextual_ECoG_positive_COM_optimized_params_november\random_dataset_{idx+1}_optimized_mixed_split_contextual.xlsx')
 
     # #do the same changes for training set and validation set of Firefly population
     # print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
