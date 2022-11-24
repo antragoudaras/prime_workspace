@@ -24,8 +24,8 @@ parser = argparse.ArgumentParser("hyperparameter Tuning for PRIME")
 parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha")
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
 parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
-parser.add_argument("--train_steps", type=int, default=1001, help="A search state file to resume from")
-parser.add_argument("--batch_size", type=int, default=64, help="A search state file to resume from")
+parser.add_argument("--train_steps", type=int, default=501, help="A search state file to resume from")
+parser.add_argument("--batch_size", type=int, default=256, help="A search state file to resume from")
 args = parser.parse_args()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
@@ -1029,6 +1029,7 @@ class PRIMEDataset(tf.Module):
       split_lengths.append(total_length_split)
     self.split_lengths = split_lengths  # later used to split input when needed
     self.continuous_or_not = (total_length_split > 0)
+    self._num_contexts = self._design_space_dict['subject_id']['value_range'][-1]
 
   @property
   def size(self,):
@@ -1076,7 +1077,7 @@ class PRIMEDataset(tf.Module):
     all_test_elements = tf.expand_dims(
         tf.gather(self._tf_dataset['score'], indices), 1)
     context_elements = tf.one_hot(tf.gather(self._tf_dataset['subject_id'], indices),
-                                  depth=3)
+                                  depth=self._num_contexts)
     raw_context_elements = tf.expand_dims(
         tf.gather(self._tf_dataset['raw_context'], indices), 1)
     return tf.concat(all_train_elements, 1), all_test_elements, context_elements, raw_context_elements
@@ -1423,7 +1424,7 @@ def train_eval_offline(
   training_dict['input_splits'] = input_splits
   training_dict['num_votes'] = num_votes
   training_dict['num_gradient_steps'] = 20
-  training_dict['num_contexts'] = 3
+  training_dict['num_contexts'] = 9
 
   model = PRIMETransformerModel(
         num_outputs=1,
@@ -1453,7 +1454,6 @@ def train_eval_offline(
       # This is just to build the models.
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
-        model.load_weights(os.path.join("saved_weights_ECoG_contextual", "contextual_ECoG_mixed_split_positive_COM_20001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_250_batch_size_20001"))
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
           ranking_penalty_weight=ranking_penalty_weight)
@@ -1491,7 +1491,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(os.path.join("saved_weights_ECoG_contextual", save_dir+"_"+str(step)), overwrite=True)
+      model.save_weights(os.path.join("saved_weights_EEG_contextual", save_dir+"_"+str(step)), overwrite=True)
       # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
