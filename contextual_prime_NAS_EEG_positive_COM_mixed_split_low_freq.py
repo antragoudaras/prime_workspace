@@ -1544,7 +1544,7 @@ def train_eval_offline(
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
       # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-      random_dataset.to_excel(os.path.join("contextual_EEG_low_freq_positive_COM_optimized_params_november", "random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_100k.xlsx"))
+      random_dataset.to_excel(os.path.join("contextual_EEG_low_freq_positive_COM_optimized_params_november", "random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_"+str(train_steps-1)+"_steps_low_freq.xlsx"))
 
     # #do the same changes for training set and validation set of Firefly population
     # print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
