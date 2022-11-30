@@ -25,7 +25,7 @@ parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
 parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
 parser.add_argument("--train_steps", type=int, default=501, help="A search state file to resume from")
-parser.add_argument("--batch_size", type=int, default=256, help="A search state file to resume from")
+parser.add_argument("--batch_size", type=int, default=128, help="A search state file to resume from")
 args = parser.parse_args()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
@@ -1495,7 +1495,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(os.path.join("saved_weights_EEG_contextual", save_dir+"_"+str(step)), overwrite=True)
+      model.save_weights(os.path.join("saved_weights_EEG_contextual_leave_one_out", save_dir+"_"+str(step)), overwrite=True)
       # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
@@ -1548,111 +1548,25 @@ def train_eval_offline(
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
       # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-      random_dataset.to_excel(os.path.join("contextual_EEG_low_freq_positive_COM_optimized_params_november", "random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_"+str(train_steps-1)+"_steps_low_freq.xlsx"))
-
-    # #do the same changes for training set and validation set of Firefly population
-    # print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for training_dataset designs')
-    # discrete_optimizer2 = FireflyAlg(initial_dataset=training_dataset, config=config, population=25, remainder=True, contextual=model.contextual, num_contexts=model.num_contexts)
-    # best_firefly2 = discrete_optimizer2.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
-    # print('---- For training dataset designs: The best firelfy found by the discrete optimizer is the following---')
-    # print('Configuration: {}'.format(discrete_optimizer2.onh_2_integer_conv(best_firefly2.numpy())))
-    # if not model.contextual:
-    #   best_score2 = model(inputs=best_firefly2, training=False)
-    # else:
-    #   contexts = discrete_optimizer2.generate_contexts_vectors()
-    #   contextual_score_list = []
-    #   for context in contexts:
-    #     context_tf = tf.convert_to_tensor(deepcopy(context), dtype=tf.float32)
-    #     contextual_score = model((best_firefly2, context_tf), training=False).numpy()
-    #     contextual_score_list.append(contextual_score)
-    #   contextual_score_np = np.array(contextual_score_list).squeeze(axis=-1)
-    #   best_score2 = np.mean(contextual_score_np, axis=0)
-    # print('Score/Error: {}'.format(best_score2))
-    # print('----Full list of optimized designs-----')
-    # print('{}'.format(discrete_optimizer2.onh_2_integer_conv(discrete_optimizer2.fireflies.numpy())))
-    # print('---Predicted scores/error for these accelerator designs-----')
-    # if not model.contextual:
-    #   scores2 = model(inputs=discrete_optimizer2.fireflies, training=False)
-    # else:
-    #   contextual_score_list = [] 
-    #   for context in contexts:
-    #     context_correct_size = np.array([deepcopy(context) for _ in range(discrete_optimizer2.fireflies.shape[0])]).squeeze(axis=1)
-    #     context_tf = tf.convert_to_tensor(context_correct_size, dtype=tf.float32)
-    #     contextual_score = model((discrete_optimizer2.fireflies, context_tf), training=False).numpy()
-    #     contextual_score_list.append(contextual_score)
-    #   contextual_intensity_np = np.array(contextual_score_list).squeeze(axis=-1)
-    #   scores2 = np.expand_dims(np.mean(contextual_intensity_np, axis=0), axis=-1)
-    # print('{}'.format(scores2))
-    
-    # train_data = discrete_optimizer2.onh_2_integer_conv(discrete_optimizer2.fireflies.numpy()).numpy()
-    # train_dataset = pd.DataFrame({'param_1': train_data[:, 0], 'param_2': train_data[:, 1], 'param_3': train_data[:, 2], 
-    #                     'param_4': train_data[:, 3], 'param_5': train_data[:, 4], 'param_6': train_data[:, 5], 
-    #                     'param_7': train_data[:, 6], 'param_8': train_data[:, 7]})
-    # param_7_series = train_dataset['param_7'].squeeze()
-    # param_8_series = train_dataset['param_8'].squeeze()
-    # train_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
-    # train_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    # # train_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split.csv')
-    # train_dataset.to_excel(f'./contextual_ECoG_positive_COM_optimized_params/train_dataset_optimized_mixed_split_contextual.xlsx')
-    
-    # print('Start Discerte Optimizer (Metaheuristic (Firelfy) Algorithm) for validation_dataset designs')
-    # discrete_optimizer3 = FireflyAlg(initial_dataset=validation_dataset, config=config, population=25, remainder=True, contextual=model.contextual, num_contexts=model.num_contexts)
-    # best_firefly3 = discrete_optimizer3.run_inference(num_iters=int(2e2), model=model, mode_opt=False)
-    # print('---- For validation dataset: The best firelfy found by the discrete optimizer is the following---')
-    # print('Configuration: {}'.format(discrete_optimizer3.onh_2_integer_conv(best_firefly3.numpy())))
-    # if not model.contextual:
-    #   best_score3 = model(inputs=best_firefly3, training=False)
-    # else:
-    #   contextual_score_list = []
-    #   for context in contexts:
-    #     context_tf = tf.convert_to_tensor(deepcopy(context), dtype=tf.float32)
-    #     contextual_score = model((best_firefly3, context_tf), training=False).numpy()
-    #     contextual_score_list.append(contextual_score)
-    #   contextual_score_np = np.array(contextual_score_list).squeeze(axis=-1)
-    #   best_score3 = np.mean(contextual_score_np, axis=0)
-    # print('Score/Error: {}'.format(best_score3))
-    # print('----Full list of optimized designs-----')
-    # print('{}'.format(discrete_optimizer3.onh_2_integer_conv(discrete_optimizer3.fireflies.numpy())))
-    # print('---Predicted scores/error for these accelerator designs-----')
-    # if not model.contextual:
-    #   scores3 = model(inputs=discrete_optimizer3.fireflies, training=False)
-    # else:
-    #   contextual_score_list = [] 
-    #   for context in contexts:
-    #     context_correct_size = np.array([deepcopy(context) for _ in range(discrete_optimizer3.fireflies.shape[0])]).squeeze(axis=1)
-    #     context_tf = tf.convert_to_tensor(context_correct_size, dtype=tf.float32)
-    #     contextual_score = model((discrete_optimizer3.fireflies, context_tf), training=False).numpy()
-    #     contextual_score_list.append(contextual_score)
-    #   contextual_intensity_np = np.array(contextual_score_list).squeeze(axis=-1)
-    #   scores3 = np.expand_dims(np.mean(contextual_intensity_np, axis=0), axis=-1)
-    # print('{}'.format(scores3))
-    
-    # val_data = discrete_optimizer3.onh_2_integer_conv(discrete_optimizer3.fireflies.numpy()).numpy()
-    # val_dataset = pd.DataFrame({'param_1': val_data[:, 0], 'param_2': val_data[:, 1], 'param_3': val_data[:, 2], 
-    #                     'param_4': val_data[:, 3], 'param_5': val_data[:, 4], 'param_6': val_data[:, 5], 
-    #                     'param_7': val_data[:, 6], 'param_8': val_data[:, 7]})
-    
-    # param_7_series = val_dataset['param_7'].squeeze()
-    # param_8_series = val_dataset['param_8'].squeeze()
-    # val_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
-    # val_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-    # # val_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split.csv')
-    # val_dataset.to_excel(f'./contextual_ECoG_positive_COM_optimized_params/val_dataset_optimized_mixed_split_contextual.xlsx')
-
-
+      random_dataset.to_excel(os.path.join("contextual_leave_one_out_EEG_low_freq_positive_COM_optimized_params_november", "random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_leave_one_out_"+str(train_steps-1)+"_steps_low_freq.xlsx"))
 
 
 df = pd.read_csv(r'final_dataset_EEG_contextual_low_freq.csv',
             index_col=0,
-            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "param_7", "param_8", "accuracy", "subject_id"])
+            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "param_7", "param_8", "accuracy", "subject_id"],
+            dtype=str)
 
 # Drop first row by selecting all rows from first row onwards
 df = df.iloc[1: , :]
 df_actual = df.drop_duplicates()
+# df_actual = df_actual.reset_index()
 # Drop a patient/subject from the final_dataset_EEG_contextual_low_freq
-delete_patient = 2
-df_actual_zero_shot = df_actual[df.subject_id == delete_patient]
-df_actual_shuffled = df_actual_zero_shot.sample(frac=1, random_state=1) #shuffle the valid configs with their accuracy values
+delete_patient = 2.0
+df_new = df_actual.drop(df[df['subject_id'] == str(delete_patient)].index)
+# df_new = df_new.reset_index()
+
+df_actual_shuffled = df_new.sample(frac=1, random_state=1) #shuffle the valid configs with their accuracy values
+
 print(df_actual_shuffled)
 
 train_len = int(0.8 * (len(df_actual_shuffled) - 1))
@@ -1665,7 +1579,8 @@ validation_data = df_valid.to_dict('list')
 # Making all the parameters discrete
 for key in training_data:
     training_data[key] = np.array(training_data[key], dtype=np.float32)
-training_data['param_6'] = np.array(int(1e1)*training_data['param_6'], dtype=np.float32)
+training_data['param_6'] = np.array(int(1e1)*training_data['param_6'], dtype=np.int32)
+training_data['param_6'] = np.array(training_data['param_6'], dtype=np.float32)
 training_data['param_7'] = np.array(int(1e2)*training_data['param_7'], dtype=np.int32)
 training_data['param_7'] = np.array(training_data['param_7'], dtype=np.float32)
 training_data['param_8'] = np.array(int(1e4)*training_data['param_8'], dtype=np.int32)
@@ -1673,7 +1588,8 @@ training_data['param_8'] = np.array(training_data['param_8'], dtype=np.float32)
 # Making all the parameters discrete
 for key in validation_data:
     validation_data[key] = np.array(validation_data[key], dtype=np.float32)
-validation_data['param_6'] = np.array(int(1e1)*validation_data['param_6'], dtype=np.float32)
+validation_data['param_6'] = np.array(int(1e1)*validation_data['param_6'], dtype=np.int32)
+validation_data['param_6'] = np.array(validation_data['param_6'], dtype=np.float32)
 validation_data['param_7'] = np.array(int(1e2)*validation_data['param_7'], dtype=np.int32)
 validation_data['param_7'] = np.array(validation_data['param_7'], dtype=np.float32)
 validation_data['param_8'] = np.array(int(1e4)*validation_data['param_8'], dtype=np.int32)
@@ -1708,7 +1624,7 @@ train_eval_offline(
   summary_freq=100,
   eval_freq=100,
   add_summary=True,
-  save_dir=f"contextual_low_freq_EEG_mixed_split_positive_COM_{args.train_steps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha_{args.batch_size}_batch_size",
+  save_dir=f"leave_one_out_contextual_low_freq_EEG_mixed_split_positive_COM_{args.train_steps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha_{args.batch_size}_batch_size",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
@@ -1720,5 +1636,6 @@ train_eval_offline(
   infeasible_alpha=args.infeasible_alpha,
   enable_discrete_optimizer=True,
   skip_training=False,
+  contextual=True,
   num_contexts = 8
 )
