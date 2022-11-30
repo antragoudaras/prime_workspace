@@ -1561,7 +1561,7 @@ df = df.iloc[1: , :]
 df_actual = df.drop_duplicates()
 # df_actual = df_actual.reset_index()
 # Drop a patient/subject from the final_dataset_EEG_contextual_high_freq
-delete_patient = 4.0
+delete_patient = 4
 df_new = df_actual.drop(df[df['subject_id'] == str(delete_patient)].index)
 # df_new = df_new.reset_index()
 
