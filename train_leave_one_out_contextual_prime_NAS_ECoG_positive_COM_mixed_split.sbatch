@@ -18,4 +18,4 @@ module load cudnn/8.1.1-cuda11.2.2
 # Load software stack
 conda activate ./env
 
-python leave_one_out_contextu`al_prime_NAS_ECoG_positive_COM_mixed_split.py "$@"
+python leave_one_out_contextual_prime_NAS_ECoG_positive_COM_mixed_split.py "$@"
