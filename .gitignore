@@ -2,7 +2,7 @@
 *.pdf
 #ignore doxc
 *.docx
-*.xlsx
+
 #ignore pngs
 *.png
 #ignore unwaned/old files
@@ -18,6 +18,7 @@ ECoG_discrete_*/
 *_optimized_datasets/
 saved_weights_*/
 ECoG_contextual_november_datasets_folder/
+!contextual_ECoG_positive_COM_optimized_params_november/
 
 Firefly.*
 old_firefly*
