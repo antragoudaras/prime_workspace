@@ -1651,7 +1651,8 @@ discrete:subject_id:float64:true:1,2,3,4,5,6,7,8,9"""
 
 df = pd.read_csv(r'final_dataset_EEG_contextual_high_freq.csv',
             index_col=0,
-            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "param_7", "param_8", "accuracy", "subject_id"])
+            names=["param_1", "param_2", "param_3", "param_4", "param_5", "param_6", "param_7", "param_8", "accuracy", "subject_id"],
+            dtype=str)
 
 # Drop first row by selecting all rows from first row onwards
 df = df.iloc[1: , :]
