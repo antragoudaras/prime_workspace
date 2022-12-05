@@ -19,7 +19,8 @@ INFEASIBLE_ALPHA=0.05
 NUM_VOTES=1
 TRAIN_STEPS=30001
 BATCH_SIZE=512
+TOTAL_STEPS=$(($TRAIN_STEPS + 59999))
 
-JOB_NAME=resume_PRIME_contextual_EEG_positive_COM_mixed_split_${$($TRAIN_STEPS+59999)}_grad_steps_mixed_split_${NUM_VOTES}_votes_${CQL_ALPHA}_cql_alpha_${INFEASIBLE_ALPHA}_infeasible_alpha
+JOB_NAME=resume_PRIME_contextual_EEG_positive_COM_mixed_split_${TOTAL_STEPS}_grad_steps_mixed_split_${NUM_VOTES}_votes_${CQL_ALPHA}_cql_alpha_${INFEASIBLE_ALPHA}_infeasible_alpha
 
 sbatch --job-name "$JOB_NAME" "$SRC_DIR"/train_contextual_prime_NAS_EEG_positive_COM_mixed_split_low_freq.sbatch --cql_alpha ${CQL_ALPHA} --infeasible_alpha ${INFEASIBLE_ALPHA} --num_votes ${NUM_VOTES} --train_steps ${TRAIN_STEPS} --batch_size ${BATCH_SIZE}
