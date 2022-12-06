@@ -1458,8 +1458,8 @@ def train_eval_offline(
       # This is just to build the models.
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
-        print("Load Weights from dir : saved_weights_EEG_contextual_leave_one_out/leave_one_out_contextual_high_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000", flush=True)
-        model.load_weights(os.path.join("saved_weights_EEG_contextual_leave_one_out", "leave_one_out_contextual_high_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000"))
+        print("Load Weights from dir : resume_leave_one_out_contextual_high_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size/ckpt-30000", flush=True)
+        model.load_weights(os.path.join("resume_leave_one_out_contextual_high_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size", "ckpt-30000"))
         print("Succefully loaded weights", flush=True)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
@@ -1498,7 +1498,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(os.path.join("saved_weights_EEG_contextual_leave_one_out", save_dir+"_"+str(step)), overwrite=True)
+      model.save_weights(os.path.join("saved_weights_EEG_high_freq_contextual_leave_one_out", save_dir+"_"+str(step)), overwrite=True)
       # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
@@ -1551,7 +1551,7 @@ def train_eval_offline(
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
       # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-      random_dataset.to_excel(os.path.join("contextual_leave_one_out_EEG_high_freq_positive_COM_optimized_params_november", "resume_random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_leave_one_out_"+str(train_steps-1)+"_steps_high_freq.xlsx"))
+      random_dataset.to_excel(os.path.join("contextual_leave_one_out_EEG_high_freq_optimized_params_december", "random_dataset_"+str(idx+1)+"_optimized_contextual_leave_one_out_high_freq_"+str(train_steps-1)+"_steps.xlsx"))
 
 
 df = pd.read_csv(r'final_dataset_EEG_contextual_high_freq.csv',
@@ -1627,7 +1627,7 @@ train_eval_offline(
   summary_freq=100,
   eval_freq=100,
   add_summary=True,
-  save_dir=f"resume_leave_one_out_contextual_high_freq_EEG_mixed_split_positive_COM_{args.train_steps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha_{args.batch_size}_batch_size",
+  save_dir=f"leave_one_out_contextual_high_freq_EEG_{args.train_steps}_steps_{args.num_votes}_votes_{args.cql_alpha}_cql_alpha_{args.infeasible_alpha}_infeasible_alpha_{args.batch_size}_batch_size",
   loss_type='mse+rank',
   layers=(256, 256, 256),
   with_ranking_penalty=True,
