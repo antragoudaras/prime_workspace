@@ -1,5 +1,5 @@
 #!/bin/bash --login
-#SBATCH --time=40:00:00
+#SBATCH --time=60:00:00
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=v100:1
 #SBATCH --cpus-per-gpu=8 
@@ -7,8 +7,8 @@
 #SBATCH --constraint=intel
 #SBATCH --partition=batch
 #SBATCH --mail-type=ALL
-#SBATCH --output=./leave_one_out_contextual_ECoG_positive_COM_mixed_split_logs/%x-%j-slurm.out
-#SBATCH --error=./leave_one_out_contextual_ECoG_positive_COM_mixed_split_logs/%x-%j-slurm.err
+#SBATCH --output=./leave_one_out_contextual_ECoG_logs/%x-%j-slurm.out
+#SBATCH --error=./leave_one_out_contextual_ECoG_logs/%x-%j-slurm.err
 
 set -e
 module purge
