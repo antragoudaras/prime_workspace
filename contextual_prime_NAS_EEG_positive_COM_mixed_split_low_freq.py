@@ -1494,7 +1494,7 @@ def train_eval_offline(
     print ('============Finished Training============')
     if save_dir is not None:
       print('===========Saving weights================')
-      model.save_weights(os.path.join("saved_weights_EEG_contextual", save_dir+"_"+str(step)), overwrite=True)
+      model.save_weights(os.path.join("saved_weights_EEG_contextual_low_freq_all_subjs", save_dir+"_"+str(step)), overwrite=True)
       # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
@@ -1547,7 +1547,7 @@ def train_eval_offline(
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
       # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
-      random_dataset.to_excel(os.path.join("contextual_EEG_low_freq_positive_COM_optimized_params_december", "random_dataset_"+str(idx+1)+"_optimized_mixed_split_contextual_"+str(train_steps-1)+"_steps_low_freq.xlsx"))
+      random_dataset.to_excel(os.path.join("contextual_all_subjs_EEG_low_freq_optimized_params_december", "random_dataset_"+str(idx+1)+"_optimized_contextual_all_subjs"+str(train_steps-1)+"_steps_low_freq.xlsx"))
 
 
 config_str = """discrete:param_1:float64:true:25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54

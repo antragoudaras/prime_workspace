@@ -7,8 +7,8 @@
 #SBATCH --constraint=intel
 #SBATCH --partition=batch
 #SBATCH --mail-type=ALL
-#SBATCH --output=./contextual_EEG_low_freq_positive_COM_mixed_split_logs/%x-%j-slurm.out
-#SBATCH --error=./contextual_EEG_low_freq_positive_COM_mixed_split_logs/%x-%j-slurm.err
+#SBATCH --output=./contextual_EEG_low_freq_all_subjs_logs/%x-%j-slurm.out
+#SBATCH --error=./contextual_EEG_low_freq_all_subjs_logs/%x-%j-slurm.err
 
 set -e
 module purge
