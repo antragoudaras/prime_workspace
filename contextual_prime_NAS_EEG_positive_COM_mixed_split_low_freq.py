@@ -1455,7 +1455,7 @@ def train_eval_offline(
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
         print("Load Weights from dir : total_90k_contextual_low_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size", flush=True)
-        model.load_weights(os.path.join("total_90k_contextual_low_freq_EEG_mixed_split_positive_COM_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size", "ckpt-10000"))
+        model.load_weights(os.path.join("saved_weights_EEG_contextual_low_freq_all_subjs", "all_subjs_contextual_EEG_low_freq_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000"))
         print("Succefully loaded weights", flush=True)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
