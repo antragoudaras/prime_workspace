@@ -23,9 +23,9 @@ import tensorflow_probability as tfp
 parser = argparse.ArgumentParser("Hyperparameter Tuning for PRIME")
 parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha")
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
-parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
-parser.add_argument("--train_steps", type=int, default=501, help="A search state file to resume from")
-parser.add_argument("--batch_size", type=int, default=256, help="A search state file to resume from")
+parser.add_argument("--num_votes", type=int, default=1, help="Number of Votes")
+parser.add_argument("--train_steps", type=int, default=501, help="Num of Gradient steps")
+parser.add_argument("--batch_size", type=int, default=128, help="Batch Size")
 args = parser.parse_args()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
@@ -1029,7 +1029,7 @@ class PRIMEDataset(tf.Module):
       split_lengths.append(total_length_split)
     self.split_lengths = split_lengths  # later used to split input when needed
     self.continuous_or_not = (total_length_split > 0)
-    self._num_contexts = self._design_space_dict['subject_id']['value_range'][-1]
+    self._num_contexts = len(self._design_space_dict['subject_id']['value_range'])
 
   @property
   def size(self,):
@@ -1364,7 +1364,9 @@ def train_eval_offline(
     infeasible_alpha=1.0,
     # accelerated search bools
     enable_discrete_optimizer=False,
-    skip_training=False):
+    skip_training=False,
+    contextual=True,
+    num_contexts=None):
   """Training loop for the PRIME model. 
   
   Most of the input arguments are primarily hyperparameters for training the
@@ -1424,7 +1426,8 @@ def train_eval_offline(
   training_dict['input_splits'] = input_splits
   training_dict['num_votes'] = num_votes
   training_dict['num_gradient_steps'] = 20
-  training_dict['num_contexts'] = 9
+  if contextual:
+    training_dict['num_contexts'] = num_contexts
 
   model = PRIMETransformerModel(
         num_outputs=1,
@@ -1433,7 +1436,7 @@ def train_eval_offline(
         layers=layers,
         penalty_weight=cql_alpha,
         negative_sampler=None,
-        contextual=True,
+        contextual=contextual,
         params_dict=training_dict)
   
 
@@ -1626,5 +1629,7 @@ train_eval_offline(
   cql_alpha=args.cql_alpha,
   infeasible_alpha=args.infeasible_alpha,
   enable_discrete_optimizer=True,
-  skip_training=False
+  skip_training=False,
+  contextual=True,
+  num_contexts=9
 )

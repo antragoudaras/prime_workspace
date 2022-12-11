@@ -20,12 +20,12 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow.compat.v2 as tf
 import tensorflow_probability as tfp
 
-parser = argparse.ArgumentParser("hyperparameter Tuning for PRIME")
+parser = argparse.ArgumentParser("Hyperparameter Tuning for PRIME")
 parser.add_argument("--cql_alpha", type=float, default=0.1, help="Tune cql_alpha")
 parser.add_argument("--infeasible_alpha", type=float, default=0.05, help="Tune infeasible alpha")
-parser.add_argument("--num_votes", type=int, default=1, help="A search state file to resume from")
-parser.add_argument("--train_steps", type=int, default=501, help="A search state file to resume from")
-parser.add_argument("--batch_size", type=int, default=128, help="A search state file to resume from")
+parser.add_argument("--num_votes", type=int, default=1, help="Number of Votes")
+parser.add_argument("--train_steps", type=int, default=501, help="Num of Gradient steps")
+parser.add_argument("--batch_size", type=int, default=128, help="Batch Size")
 args = parser.parse_args()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), flush=True)
@@ -1437,7 +1437,7 @@ def train_eval_offline(
         layers=layers,
         penalty_weight=cql_alpha,
         negative_sampler=None,
-        contextual=True,
+        contextual=contextual,
         params_dict=training_dict)
   
 
