@@ -1458,8 +1458,8 @@ def train_eval_offline(
       # This is just to build the models.
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
-        print("Load Weights from dir : saved_weights_EEG_low_freq_contextual_leave_one_out/leave_one_out_contextual_low_freq_EEG_40001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_40000", flush=True)
-        model.load_weights(os.path.join("saved_weights_EEG_low_freq_contextual_leave_one_out", "leave_one_out_contextual_low_freq_EEG_40001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_40000"))
+        print("Load Weights from dir : saved_weights_EEG_low_freq_contextual_leave_one_out/leave_one_out_contextual_low_freq_EEG_20001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_20000.index", flush=True)
+        model.load_weights(os.path.join("saved_weights_EEG_low_freq_contextual_leave_one_out", "leave_one_out_contextual_low_freq_EEG_20001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_20000"))
         print("Succefully loaded weights", flush=True)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
@@ -1499,7 +1499,6 @@ def train_eval_offline(
     if save_dir is not None:
       print('===========Saving weights================')
       model.save_weights(os.path.join("saved_weights_EEG_low_freq_contextual_leave_one_out", save_dir+"_"+str(step)), overwrite=True)
-      # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
@@ -1550,7 +1549,6 @@ def train_eval_offline(
       param_8_series = random_dataset['param_8'].squeeze()
       random_dataset['param_7'] = param_7_series.map({1: 0.0125, 2: 0.0225, 3: 0.0325, 4: 0.0425, 5: 0.0525, 6: 0.0625, 7: 0.0725, 8: 0.0825, 9: 0.0925})
       random_dataset['param_8'] = param_8_series.map({0: 0, 1: 0.00011, 2: 0.00023, 3: 0.00034, 4: 0.00045, 5: 0.00056, 6: 0.00068, 7: 0.00079, 9: 0.0009})
-      # random_dataset.to_csv(f'./ECoG_positive_COM_optimized_params/random_dataset_optimized_mixed_split.csv')
       random_dataset.to_excel(os.path.join("contextual_leave_one_out_EEG_low_freq_optimized_params_december", "random_dataset_"+str(idx+1)+"_optimized_contextual_leave_one_out_low_freq_"+str(train_steps-1)+"_steps.xlsx"))
 
 

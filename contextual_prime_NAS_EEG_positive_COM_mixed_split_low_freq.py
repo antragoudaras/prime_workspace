@@ -1457,9 +1457,9 @@ def train_eval_offline(
       # This is just to build the models.
       if step == 0:
         _ = model.measure_stats(batch, batch_type='valid')
-        print("Load Weights from dir : saved_weights_EEG_contextual_low_freq_all_subjs/all_subjs_contextual_EEG_low_freq_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000", flush=True)
-        model.load_weights(os.path.join("saved_weights_EEG_contextual_low_freq_all_subjs", "all_subjs_contextual_EEG_low_freq_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000"))
-        print("Succefully loaded weights", flush=True)
+        # print("Load Weights from dir : saved_weights_EEG_contextual_low_freq_all_subjs/all_subjs_contextual_EEG_low_freq_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000", flush=True)
+        # model.load_weights(os.path.join("saved_weights_EEG_contextual_low_freq_all_subjs", "all_subjs_contextual_EEG_low_freq_30001_steps_1_votes_0.1_cql_alpha_0.05_infeasible_alpha_512_batch_size_30000"))
+        # print("Succefully loaded weights", flush=True)
       loss_dict = model.perform_training(
           batch, loss_type=loss_type,
           ranking_penalty_weight=ranking_penalty_weight)
@@ -1498,7 +1498,6 @@ def train_eval_offline(
     if save_dir is not None:
       print('===========Saving weights================')
       model.save_weights(os.path.join("saved_weights_EEG_contextual_low_freq_all_subjs", save_dir+"_"+str(step)), overwrite=True)
-      # model.save_weights(f'saved_weights_ECoG_contectual/{save_dir}_{step}', overwrite=True)
     print('===Avg kendall loss found during traing===')
     for step in range(len(avg_kendall_loss_list['step'])):
       print('Step: {}, val_avg_kendall_loss {}'.format(avg_kendall_loss_list['step'][step], avg_kendall_loss_list['avg_kendall_loss'][step]))
